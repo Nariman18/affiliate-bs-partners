@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowUpRight, Lock, Mail, Eye, EyeOff, AtSign } from "lucide-react";
 import Link from "next/link";
@@ -41,7 +41,8 @@ function validate(
   return e;
 }
 
-export default function RegisterPage() {
+// FIX: Extracted your main logic into a child component
+function RegisterContent() {
   const searchParams = useSearchParams();
   const refId = searchParams.get("ref") ?? undefined;
 
@@ -50,7 +51,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // FIX 1: Default role set to the new Prisma Enum
   const [role, setRole] = useState("AFFILIATE_MANAGER");
 
   const [showPw, setShowPw] = useState(false);
@@ -89,7 +89,6 @@ export default function RegisterPage() {
     <div className="h-screen w-full overflow-hidden bg-[#080808] text-zinc-100 flex flex-col lg:flex-row selection:bg-amber-400 selection:text-black">
       {/* ── Left Side: Form Container (50%) ── */}
       <div className="w-full lg:w-1/2 h-full flex flex-col justify-center items-center p-4 sm:p-8 lg:p-12 relative z-10">
-        {/* Background glow constrained to left side */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
           <div className="w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px]" />
         </div>
@@ -135,7 +134,6 @@ export default function RegisterPage() {
             </AnimatePresence>
 
             <form className="space-y-3" onSubmit={handleSubmit} noValidate>
-              {/* ── Username ── */}
               <Field
                 label="Username"
                 error={fieldErr("username")}
@@ -151,7 +149,6 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              {/* ── Email ── */}
               <Field
                 label="Email"
                 error={fieldErr("email")}
@@ -167,7 +164,6 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              {/* ── Password ── */}
               <Field
                 label="Password"
                 error={fieldErr("password")}
@@ -197,7 +193,6 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              {/* ── Confirm Password ── */}
               <Field
                 label="Confirm Password"
                 error={fieldErr("confirmPassword")}
@@ -227,13 +222,10 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              {/* ── Account type ── */}
               <div className="flex flex-col space-y-2 pt-1">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                   Account Type
                 </label>
-
-                {/* FIX 2: Mapped to the exact strings from your new Prisma Enum */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     "AFFILIATE_MANAGER",
@@ -250,7 +242,6 @@ export default function RegisterPage() {
                           : "bg-transparent border-white/10 text-zinc-500 hover:border-white/20 hover:text-white"
                       }`}
                     >
-                      {/* FIX 3: Replace all underscores with spaces for the UI label */}
                       {r.replace(/_/g, " ")}
                     </button>
                   ))}
@@ -271,7 +262,6 @@ export default function RegisterPage() {
                 </AnimatePresence>
               </div>
 
-              {/* Server-side error */}
               <AnimatePresence>
                 {registerMutation.isError && (
                   <motion.div
@@ -286,7 +276,6 @@ export default function RegisterPage() {
                 )}
               </AnimatePresence>
 
-              {/* Submit */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -320,7 +309,6 @@ export default function RegisterPage() {
         </motion.div>
       </div>
 
-      {/* ── Right Side: Image Container (50%) ── */}
       <div className="hidden lg:block lg:w-1/2 relative h-full">
         <Image
           alt="CatLoginRegister"
@@ -332,6 +320,21 @@ export default function RegisterPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-transparent to-transparent opacity-80 pointer-events-none" />
       </div>
     </div>
+  );
+}
+
+// This is the new default export that wraps everything in Suspense
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-full bg-[#080808] flex items-center justify-center text-amber-400 font-bold text-sm">
+          Loading...
+        </div>
+      }
+    >
+      <RegisterContent />
+    </Suspense>
   );
 }
 
