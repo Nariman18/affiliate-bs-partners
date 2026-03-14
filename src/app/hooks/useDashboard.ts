@@ -306,6 +306,21 @@ export function useUpdateOffer() {
     onError: () => toast.error("Failed to update offer"),
   });
 }
+
+export function useDeleteOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: offersEndpoints.delete,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offers"] });
+      toast.success("Offer deleted successfully");
+    },
+    onError: (e: any) => {
+      toast.error(e.response?.data?.error ?? "Failed to delete offer");
+    },
+  });
+}
+
 export function useRequestOffer() {
   const qc = useQueryClient();
   return useMutation({
@@ -497,5 +512,16 @@ export function useReferralStats() {
       const { data } = await api.get("/referrals/stats");
       return data;
     },
+  });
+}
+
+export function useToggleStarOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: offersEndpoints.toggleStar,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offers"] });
+    },
+    onError: () => toast.error("Failed to update favorite status"),
   });
 }

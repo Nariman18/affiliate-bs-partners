@@ -106,6 +106,16 @@ export const offersEndpoints = {
     return data;
   },
 
+  toggleStar: async (id: string) => {
+    const { data } = await api.post(`/offers/${id}/star`);
+    return data;
+  },
+
+  getUploadUrl: async (payload: { filename: string; contentType: string }) => {
+    const { data } = await api.post("/offers/upload-url", payload);
+    return data as { uploadUrl: string; publicUrl: string; fileKey: string };
+  },
+
   // Admin only
   create: async (payload: {
     name: string;
@@ -113,11 +123,14 @@ export const offersEndpoints = {
     casinoUrl: string;
     description?: string;
     targetCountry?: string;
-    commissionPct?: number;
     logoUrl?: string;
     geoTargets?: string[];
     minDeposit?: number;
+    regPayout?: number;
     isVisible?: boolean;
+    isNew?: boolean;
+    isTop?: boolean;
+    isExclusive?: boolean;
   }) => {
     const { data } = await api.post("/offers", payload);
     return data;
@@ -126,6 +139,11 @@ export const offersEndpoints = {
   // Admin only
   update: async ({ id, ...payload }: { id: string; [k: string]: any }) => {
     const { data } = await api.patch(`/offers/${id}`, payload);
+    return data;
+  },
+
+  delete: async (id: string) => {
+    const { data } = await api.delete(`/offers/${id}`);
     return data;
   },
 

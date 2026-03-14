@@ -537,7 +537,7 @@ export default function LandingPage() {
               href="/login"
               className="text-sm font-semibold text-zinc-500 hover:text-white transition-colors"
             >
-              Already a partner? Sign in →
+              Sign in →
             </Link>
           </motion.div>
         </motion.div>

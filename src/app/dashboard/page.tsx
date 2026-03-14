@@ -415,11 +415,7 @@ export default function Dashboard() {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          <button className="relative p-2 rounded-lg hover:bg-white/5 text-zinc-500 hover:text-zinc-300 transition-colors">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
-          </button>
-          <div className="flex items-center gap-2.5 pl-3 border-l border-white/8">
+          <div className="flex items-center gap-2.5 pl-3">
             <div className="w-8 h-8 rounded-full bg-zinc-700 border border-white/10 flex items-center justify-center text-xs font-bold text-zinc-400">
               {me?.displayName?.slice(0, 2).toUpperCase() ?? (
                 <User className="w-4 h-4" />
