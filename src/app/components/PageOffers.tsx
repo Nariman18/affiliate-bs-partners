@@ -1233,7 +1233,7 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
 
                   <Td>
                     <div className="flex items-center gap-3 min-w-[200px]">
-                      <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-zinc-800 border border-white/8 flex-shrink-0">
+                      <div className="relative w-18 h-18 rounded-xl overflow-hidden bg-zinc-800 border border-white/8 flex-shrink-0">
                         {offer.logoUrl ? (
                           <img
                             src={offer.logoUrl}
