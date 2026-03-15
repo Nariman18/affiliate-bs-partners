@@ -220,7 +220,7 @@ function AdminView() {
                 </Td>
                 <Td>
                   {c.requestedApproval ? (
-                    <Badge variant="amber">Flagged</Badge>
+                    <Badge variant="amber">Requested</Badge>
                   ) : (
                     <span className="text-zinc-700 text-xs">—</span>
                   )}
@@ -529,7 +529,7 @@ function ManagerView() {
                   </span>
                 </Td>
                 <Td>
-                  <span className="font-bold text-2xl text-amber-400">
+                  <span className="font-bold text-amber-400">
                     {fmt.usd(c.amount)}
                   </span>
                 </Td>

@@ -10,7 +10,6 @@ import {
   MousePointer2,
   Copy,
   TerminalSquare,
-  UserCheck,
 } from "lucide-react";
 import {
   useCreateLink,
@@ -19,6 +18,7 @@ import {
   useTeam,
   useOfferRequests,
   useUpdateOfferRequest,
+  useMyLinks, // <-- Added this hook to fetch the manager's links
 } from "../hooks/useDashboard";
 import { ROLES, type AppRole } from "../lib/api";
 import {
@@ -98,16 +98,17 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
   const createLink = useCreateLink();
   const requestOffer = useRequestOffer();
 
-  // Only fetch requests if the user is an Admin or Basic Sub to avoid 403 errors
   const { data: requests = [], isLoading: reqLoading } = useOfferRequests(
     role !== ROLES.MANAGER ? offerId : "",
   );
   const updateReq = useUpdateOfferRequest();
 
   const { data: team = [], isLoading: teamLoading } = useTeam();
-  const managers = (team as any[]).filter(
-    (m: any) => m.role === ROLES.MANAGER || !m.role,
-  );
+
+  // Fetch links specifically for the manager
+  const { data: myLinks = [] } = useMyLinks();
+
+  const managers = team as any[];
 
   const TABS =
     role === ROLES.MANAGER
@@ -125,7 +126,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
         onSuccess: () => {
           setShowDistribute(false);
           setSelectedManagerId("");
-          refetch(); // Reload to show the new link
+          refetch();
         },
       },
     );
@@ -133,7 +134,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
 
   const handleGenerateTestLink = () => {
     createLink.mutate(
-      // FIXED: Passed affiliateId as empty string to satisfy TypeScript
       { offerId: offer.id, affiliateId: "", name: `Test Link - ${offer.name}` },
       { onSuccess: () => refetch() },
     );
@@ -145,6 +145,12 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
   };
 
   const geoData = COUNTRIES.find((c) => c.code === offer.targetCountry);
+
+  // Filter links to show in the table based on the user's role
+  const displayLinks =
+    role === ROLES.MANAGER
+      ? myLinks.filter((link: any) => link.offerId === offer.id)
+      : offer.links;
 
   return (
     <motion.div
@@ -253,13 +259,16 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
           {/* ── TRACKING LINKS TAB ── */}
           {tab === "Tracking Links" && (
             <div className="mt-4">
+              {/* ACTION BUTTONS: Only shown to Admin and Basic Subs */}
               {(role === ROLES.ADMIN || role === ROLES.BASIC) &&
                 offer.status === "ACTIVE" && (
                   <div className="flex gap-3 mb-6">
-                    <AmberBtn onClick={() => setShowDistribute(true)}>
-                      <LinkIcon className="w-3.5 h-3.5" /> Distribute Link to
-                      Manager
-                    </AmberBtn>
+                    {role === ROLES.BASIC && (
+                      <AmberBtn onClick={() => setShowDistribute(true)}>
+                        <LinkIcon className="w-3.5 h-3.5" /> Distribute Link to
+                        Manager
+                      </AmberBtn>
+                    )}
                     {role === ROLES.ADMIN && (
                       <OutlineBtn
                         onClick={handleGenerateTestLink}
@@ -272,6 +281,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   </div>
                 )}
 
+              {/* TABLE: Shown to everyone, but data is filtered above */}
               <TableWrapper>
                 <thead>
                   <tr>
@@ -281,13 +291,17 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {!offer.links || offer.links.length === 0 ? (
+                  {!displayLinks || displayLinks.length === 0 ? (
                     <EmptyState
                       colSpan={3}
-                      label="No tracking links generated yet."
+                      label={
+                        role === ROLES.MANAGER
+                          ? "You have not been assigned any tracking links for this offer yet."
+                          : "No tracking links generated yet."
+                      }
                     />
                   ) : (
-                    offer.links.map((link: any) => (
+                    displayLinks.map((link: any) => (
                       <tr key={link.id} className="hover:bg-white/2">
                         <Td>{link.name}</Td>
                         <Td>
@@ -325,6 +339,8 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   )}
                 </tbody>
               </TableWrapper>
+
+              {/* HOW TO TEST INSTRUCTIONS: Only Admin */}
               {role === ROLES.ADMIN && (
                 <div className="mt-4 p-4 rounded-xl border border-sky-500/20 bg-sky-500/5">
                   <h4 className="text-xs font-bold text-sky-400 mb-2 flex items-center gap-2">
@@ -391,7 +407,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                           </span>
                         </Td>
                         <Td>
-                          {/* FIXED: Removed "rose" Badge constraint, used a custom span for rejected */}
                           {req.status === "APPROVED" && (
                             <Badge variant="green">APPROVED</Badge>
                           )}
@@ -625,11 +640,17 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                 className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40 mb-5"
               >
                 <option value="">— Select a manager —</option>
-                {managers.map((m: any) => (
-                  <option key={m.id} value={m.id}>
-                    {m.displayName ?? m.username} ({m.email})
-                  </option>
-                ))}
+                {managers.map((m: any) => {
+                  const isApproved = requests.some(
+                    (r: any) => r.user.id === m.id && r.status === "APPROVED",
+                  );
+                  return (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName ?? m.username} ({m.email}){" "}
+                      {isApproved ? "✅ (Approved)" : ""}
+                    </option>
+                  );
+                })}
               </select>
             )}
             <div className="flex gap-3 justify-end">

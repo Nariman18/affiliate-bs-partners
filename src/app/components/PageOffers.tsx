@@ -44,59 +44,134 @@ import {
   useDeleteOffer,
 } from "../hooks/useDashboard";
 import { offersEndpoints, ROLES, type AppRole } from "../lib/api";
+import { CATEGORIES, COUNTRIES } from "../lib/utils"; // <-- Make sure this path points to your utils.ts
 import { toast } from "sonner";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  "All",
-  "Facebook",
-  "ASO",
-  "PPC",
-  "SEO",
-  "In-App",
-  "Email",
-  "Push",
-  "UAC",
-  "FB Apps",
-];
-
-const COUNTRIES = [
-  { code: "US", name: "United States", flag: "🇺🇸" },
-  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "DE", name: "Germany", flag: "🇩🇪" },
-  { code: "FR", name: "France", flag: "🇫🇷" },
-  { code: "IT", name: "Italy", flag: "🇮🇹" },
-  { code: "PL", name: "Poland", flag: "🇵🇱" },
-  { code: "ES", name: "Spain", flag: "🇪🇸" },
-  { code: "NL", name: "Netherlands", flag: "🇳🇱" },
-  { code: "BR", name: "Brazil", flag: "🇧🇷" },
-  { code: "CA", name: "Canada", flag: "🇨🇦" },
-  { code: "AU", name: "Australia", flag: "🇦🇺" },
-  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
-  { code: "IN", name: "India", flag: "🇮🇳" },
-  { code: "MX", name: "Mexico", flag: "🇲🇽" },
-  { code: "RU", name: "Russia", flag: "🇷🇺" },
-  { code: "TR", name: "Turkey", flag: "🇹🇷" },
-  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
-  { code: "JP", name: "Japan", flag: "🇯🇵" },
-  { code: "KR", name: "South Korea", flag: "🇰🇷" },
-  { code: "AR", name: "Argentina", flag: "🇦🇷" },
-  { code: "CL", name: "Chile", flag: "🇨🇱" },
-  { code: "CO", name: "Colombia", flag: "🇨🇴" },
-  { code: "EG", name: "Egypt", flag: "🇪🇬" },
-  { code: "UA", name: "Ukraine", flag: "🇺🇦" },
-  { code: "RO", name: "Romania", flag: "🇷🇴" },
-  { code: "HU", name: "Hungary", flag: "🇭🇺" },
-  { code: "CZ", name: "Czech Republic", flag: "🇨🇿" },
-  { code: "SK", name: "Slovakia", flag: "🇸🇰" },
-  { code: "PT", name: "Portugal", flag: "🇵🇹" },
-  { code: "GR", name: "Greece", flag: "🇬🇷" },
-  { code: "SI", name: "Slovenia", flag: "🇸🇮" },
-  { code: "HR", name: "Croatia", flag: "🇭🇷" },
-  { code: "AT", name: "Austria", flag: "🇦🇹" },
-];
-
 // ─── Helper Components ────────────────────────────────────────────────────────
+
+// Custom Searchable Dropdown tailored for Modal Forms
+function FormSelect({
+  value,
+  onChange,
+  items,
+  placeholder,
+  renderItem,
+  displayItem,
+  searchable = false,
+  hasGlobal = false,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  items: any[];
+  placeholder: string;
+  renderItem: (item: any) => React.ReactNode;
+  displayItem: (val: string) => React.ReactNode;
+  searchable?: boolean;
+  hasGlobal?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!searchable) return items;
+    return items.filter((item) => {
+      const text = typeof item === "string" ? item : item.name;
+      return text.toLowerCase().includes(q.toLowerCase());
+    });
+  }, [items, q, searchable]);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full px-3 py-2 rounded-xl border border-white/8 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40 flex items-center justify-between transition-colors hover:border-white/20"
+      >
+        <span className="truncate">{displayItem(value) || placeholder}</span>
+        <ChevronDown className="w-4 h-4 text-zinc-500 flex-shrink-0 ml-2" />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => {
+                setOpen(false);
+                setQ("");
+              }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-white/10 bg-zinc-900 shadow-2xl py-1 overflow-hidden flex flex-col"
+            >
+              {searchable && (
+                <div className="px-2 pb-1 pt-1 border-b border-white/5">
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full px-2 py-1.5 bg-zinc-800 border border-white/8 rounded-lg text-xs text-zinc-300 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+              )}
+              <div className="max-h-48 overflow-y-auto py-1">
+                {hasGlobal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("");
+                      setOpen(false);
+                      setQ("");
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      !value
+                        ? "text-amber-400 bg-white/5"
+                        : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    🌍 Global
+                  </button>
+                )}
+                {filtered.map((item, idx) => {
+                  const val = typeof item === "string" ? item : item.code;
+                  const isSelected = value === val;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        onChange(val);
+                        setOpen(false);
+                        setQ("");
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2 ${
+                        isSelected
+                          ? "text-amber-400 bg-white/5"
+                          : "text-zinc-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      {renderItem(item)}
+                    </button>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-zinc-500 italic">
+                    No results found
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function DropBtn({
   label,
   children,
@@ -161,7 +236,16 @@ function SettingsMenu({
     e.stopPropagation();
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setCoords({ top: rect.bottom + 8, left: rect.right - 160 });
+      const menuHeight = 240; // Approx height of the expanded menu
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      let topPosition = rect.bottom + 8;
+
+      if (spaceBelow < menuHeight && rect.top > menuHeight) {
+        topPosition = rect.top - menuHeight - 8;
+      }
+
+      setCoords({ top: topPosition, left: rect.right - 160 });
     }
     setOpen(!open);
   };
@@ -449,34 +533,46 @@ function CreateOfferModal({ onClose }: { onClose: () => void }) {
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block">
               Category
             </label>
-            <select
+            <FormSelect
               value={form.category}
-              onChange={(e) => set("category", e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-white/8 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
-            >
-              {CATEGORIES.filter((c) => c !== "All").map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("category", v)}
+              items={CATEGORIES.filter((c) => c !== "All")}
+              placeholder="Select category"
+              searchable
+              renderItem={(c) => c}
+              displayItem={(v) => v}
+            />
           </div>
           <div>
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block">
               Target Country
             </label>
-            <select
+            <FormSelect
               value={form.targetCountry}
-              onChange={(e) => set("targetCountry", e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-white/8 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
-            >
-              <option value="">Global</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("targetCountry", v)}
+              items={COUNTRIES}
+              placeholder="Select country"
+              searchable
+              hasGlobal
+              renderItem={(c) => (
+                <>
+                  <span>{c.flag}</span>
+                  <span className="truncate">{c.name}</span>
+                </>
+              )}
+              displayItem={(v) => {
+                if (!v) return "🌍 Global";
+                const c = COUNTRIES.find((x) => x.code === v);
+                return c ? (
+                  <div className="flex items-center gap-2">
+                    <span>{c.flag}</span>
+                    <span className="truncate">{c.name}</span>
+                  </div>
+                ) : (
+                  v
+                );
+              }}
+            />
           </div>
         </div>
 
@@ -762,34 +858,46 @@ function EditOfferModal({
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 block">
               Category
             </label>
-            <select
+            <FormSelect
               value={form.category}
-              onChange={(e) => set("category", e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-white/8 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
-            >
-              {CATEGORIES.filter((c) => c !== "All").map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("category", v)}
+              items={CATEGORIES.filter((c) => c !== "All")}
+              placeholder="Select category"
+              searchable
+              renderItem={(c) => c}
+              displayItem={(v) => v}
+            />
           </div>
           <div>
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 block">
               Target Country
             </label>
-            <select
+            <FormSelect
               value={form.targetCountry}
-              onChange={(e) => set("targetCountry", e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-white/8 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
-            >
-              <option value="">Global</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set("targetCountry", v)}
+              items={COUNTRIES}
+              placeholder="Select country"
+              searchable
+              hasGlobal
+              renderItem={(c) => (
+                <>
+                  <span>{c.flag}</span>
+                  <span className="truncate">{c.name}</span>
+                </>
+              )}
+              displayItem={(v) => {
+                if (!v) return "🌍 Global";
+                const c = COUNTRIES.find((x) => x.code === v);
+                return c ? (
+                  <div className="flex items-center gap-2">
+                    <span>{c.flag}</span>
+                    <span className="truncate">{c.name}</span>
+                  </div>
+                ) : (
+                  v
+                );
+              }}
+            />
           </div>
         </div>
 

@@ -454,14 +454,15 @@ export default function PageBilling() {
                   <Th>Amount</Th>
                   <Th>Wallet</Th>
                   <Th>Tx Hash</Th>
+                  <Th>Note</Th>
                   <Th>Status</Th>
                 </tr>
               </thead>
               <tbody>
                 {invLoading ? (
-                  <TableSkeleton rows={3} cols={5} />
+                  <TableSkeleton rows={3} cols={6} />
                 ) : (invoices as any[]).length === 0 ? (
-                  <EmptyState colSpan={5} label="No payout history yet." />
+                  <EmptyState colSpan={6} label="No payout history yet." />
                 ) : (
                   (invoices as any[]).map((inv: any) => (
                     <tr key={inv.id} className="hover:bg-white/2">
@@ -488,6 +489,18 @@ export default function PageBilling() {
                         {inv.txHash ? (
                           <span className="font-mono text-xs text-emerald-400">
                             {fmt.shortAddr(inv.txHash)}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600 text-xs">—</span>
+                        )}
+                      </Td>
+                      <Td>
+                        {inv.note ? (
+                          <span
+                            className="text-xs text-zinc-400 max-w-[150px] truncate block"
+                            title={inv.note}
+                          >
+                            {inv.note}
                           </span>
                         ) : (
                           <span className="text-zinc-600 text-xs">—</span>
