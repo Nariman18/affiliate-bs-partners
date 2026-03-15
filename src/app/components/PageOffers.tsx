@@ -93,6 +93,7 @@ const COUNTRIES = [
   { code: "GR", name: "Greece", flag: "🇬🇷" },
   { code: "SI", name: "Slovenia", flag: "🇸🇮" },
   { code: "HR", name: "Croatia", flag: "🇭🇷" },
+  { code: "AT", name: "Austria", flag: "🇦🇹" },
 ];
 
 // ─── Helper Components ────────────────────────────────────────────────────────
