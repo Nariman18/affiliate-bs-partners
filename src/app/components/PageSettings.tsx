@@ -109,7 +109,7 @@ export default function PageSettings() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 pt-4 border-t border-white/5">
+              <div className="mt-6 pt-4">
                 <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 block">
                   Update Display Name
                 </label>

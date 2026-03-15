@@ -52,6 +52,7 @@ import PageTeam from "../components/PageTeam";
 import { Spinner } from "../components/dashboard/UI";
 import { useRouter } from "next/navigation";
 import PageCommissions from "../components/PageComissions";
+import { useLogout } from "../hooks/useAuth";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = {
@@ -332,15 +333,25 @@ export default function Dashboard() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth);
   const { activePage, selectedOfferId } = useAppSelector((s) => s.ui);
-  const { data: me, isLoading: isMeLoading } = useMe();
+  const { data: me, isLoading: isMeLoading, isError } = useMe();
   const router = useRouter();
+  const handleLogout = useLogout();
 
   useEffect(() => {
-    if (me && !user) {
-      const token = localStorage.getItem("token");
-      if (token) dispatch(setCredentials({ user: me, token }));
+    const token = localStorage.getItem("token");
+
+    // If there is no token, OR if the backend rejected the token (401 Unauthorized)
+    if (!token || isError) {
+      dispatch(logout());
+      router.replace("/login");
+      return;
     }
-  }, [me, user, dispatch]);
+
+    // Sync backend data to Redux if we have it
+    if (me && !user) {
+      dispatch(setCredentials({ user: me, token }));
+    }
+  }, [me, user, dispatch, isError, router]);
 
   const [now, setNow] = useState("");
   useEffect(() => {
@@ -372,15 +383,6 @@ export default function Dashboard() {
       : role === ROLES.BASIC
         ? NAV_BASIC
         : NAV_MANAGER;
-
-  const handleSignOut = () => {
-    dispatch(logout());
-    toast("Session ended", {
-      description: "You have been securely logged out.",
-      style: { border: "1px solid rgba(255,255,255,0.1)" },
-    });
-    router.push("/login");
-  };
 
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans antialiased flex flex-col">
@@ -460,7 +462,7 @@ export default function Dashboard() {
 
           <div className="px-3 pb-4 pt-2 border-t border-white/5">
             <button
-              onClick={handleSignOut}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-zinc-600 hover:text-rose-400 hover:bg-rose-500/8 transition-all"
             >
               <LogOut className="w-4 h-4" /> Sign Out

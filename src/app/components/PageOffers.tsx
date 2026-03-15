@@ -91,6 +91,7 @@ const COUNTRIES = [
   { code: "SK", name: "Slovakia", flag: "🇸🇰" },
   { code: "PT", name: "Portugal", flag: "🇵🇹" },
   { code: "GR", name: "Greece", flag: "🇬🇷" },
+  { code: "SI", name: "Slovenia", flag: "🇸🇮" },
 ];
 
 // ─── Helper Components ────────────────────────────────────────────────────────
@@ -1291,16 +1292,16 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
 
                   <Td>
                     <div className="flex flex-col gap-0.5 text-[11px] font-mono whitespace-nowrap">
+                      <span className="text-zinc-500">
+                        FTD:{" "}
+                        <span className="font-bold text-emerald-400">
+                          {offer.minDeposit ? fmt.usd(offer.minDeposit) : "—"}
+                        </span>
+                      </span>
                       <span className="text-zinc-400">
                         REG:{" "}
                         <span className="font-bold text-white">
                           {fmt.usd(offer.regPayout ?? 0)}
-                        </span>
-                      </span>
-                      <span className="text-zinc-500">
-                        DEP:{" "}
-                        <span className="font-bold text-emerald-400">
-                          {offer.minDeposit ? fmt.usd(offer.minDeposit) : "—"}
                         </span>
                       </span>
                     </div>

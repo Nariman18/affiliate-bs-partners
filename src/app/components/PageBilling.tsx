@@ -37,7 +37,6 @@ import {
   fmt,
 } from "./dashboard/UI";
 
-// billingEndpoints.updateMethod is exported from api.ts
 import { api } from "../lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -68,7 +67,6 @@ function useUpdateMethod() {
   return { mutate, isPending };
 }
 
-// ─── Add/Edit wallet modal ────────────────────────────────────────────────────
 function WalletModal({
   onClose,
   editing,
@@ -217,7 +215,6 @@ function WalletModal({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 export default function PageBilling() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingWallet, setEditingWallet] = useState<any | null>(null);
@@ -235,7 +232,15 @@ export default function PageBilling() {
 
   const handleWithdraw = () => {
     const amount = parseFloat(withdrawAmount);
-    if (!amount || amount <= 0) return;
+    if (!amount || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    if (amount > (balance as any)?.approvedBalance) {
+      toast.error("Amount exceeds approved balance");
+      return;
+    }
+
     createPayout.mutate(
       { amount, paymentMethodId: defaultWallet?.id },
       {
@@ -255,44 +260,45 @@ export default function PageBilling() {
       animate="visible"
       exit="exit"
     >
-      <SectionHeader title="Billing" />
+      <SectionHeader
+        title="Billing"
+        sub="Manage your wallets and request payouts"
+      />
 
       <div className="grid md:grid-cols-[1fr_260px] gap-6">
-        <div className="space-y-5">
-          {/* ── Three-bucket balance (ALL roles) ── */}
+        <div className="space-y-6">
+          {/* ── Balance Cards ── */}
           <div className="rounded-2xl border border-white/6 bg-zinc-900/60 p-6">
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">
               Your Balance
             </h3>
             <div className="grid grid-cols-3 gap-4">
-              {(
-                [
-                  {
-                    label: "Pending",
-                    key: "pendingBalance",
-                    color: "text-zinc-300",
-                    icon: <Clock className="w-3.5 h-3.5" />,
-                    note: "Awaiting verification",
-                    dot: "bg-zinc-500/80",
-                  },
-                  {
-                    label: "Approved",
-                    key: "approvedBalance",
-                    color: "text-amber-400",
-                    icon: <BadgeCheck className="w-3.5 h-3.5" />,
-                    note: "Ready to withdraw",
-                    dot: "bg-amber-400/80",
-                  },
-                  {
-                    label: "Paid Out",
-                    key: "paidBalance",
-                    color: "text-emerald-400",
-                    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-                    note: "Sent to wallet",
-                    dot: "bg-emerald-400/80",
-                  },
-                ] as const
-              ).map(({ label, key, color, icon, note, dot }) => (
+              {[
+                {
+                  label: "Pending",
+                  key: "pendingBalance",
+                  color: "text-zinc-300",
+                  icon: <Clock className="w-3.5 h-3.5" />,
+                  note: "Awaiting verification",
+                  dot: "bg-zinc-500/80",
+                },
+                {
+                  label: "Approved",
+                  key: "approvedBalance",
+                  color: "text-amber-400",
+                  icon: <BadgeCheck className="w-3.5 h-3.5" />,
+                  note: "Ready to withdraw",
+                  dot: "bg-amber-400/80",
+                },
+                {
+                  label: "Paid Out",
+                  key: "paidBalance",
+                  color: "text-emerald-400",
+                  icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+                  note: "Sent to wallet",
+                  dot: "bg-emerald-400/80",
+                },
+              ].map(({ label, key, color, icon, note, dot }) => (
                 <div
                   key={key}
                   className="rounded-xl border border-white/6 bg-zinc-900/40 p-4"
@@ -319,18 +325,21 @@ export default function PageBilling() {
             </div>
             <button
               onClick={() => setShowWithdraw(true)}
-              disabled={!(balance as any)?.approvedBalance}
-              className="mt-4 text-xs text-amber-400 hover:text-amber-300 transition-colors font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={
+                !(balance as any)?.approvedBalance ||
+                (balance as any)?.approvedBalance <= 0
+              }
+              className="mt-5 text-xs text-amber-400 hover:text-amber-300 transition-colors font-bold disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
             >
-              Request withdrawal →
+              Request withdrawal <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* ── Payment Methods ── */}
+          {/* ── Payment Methods Table ── */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-white">Payment Methods</h3>
-              <AmberBtn onClick={() => setShowAddModal(true)}>
+              <AmberBtn onClick={() => setShowAddModal(true)} small>
                 <Plus className="w-3.5 h-3.5" /> Add Wallet
               </AmberBtn>
             </div>
@@ -391,7 +400,6 @@ export default function PageBilling() {
                       </Td>
                       <Td>
                         <div className="flex items-center gap-1">
-                          {/* Set as default */}
                           {!m.isDefault && (
                             <button
                               onClick={() =>
@@ -406,7 +414,6 @@ export default function PageBilling() {
                               <Star className="w-3 h-3" />
                             </button>
                           )}
-                          {/* Edit label */}
                           <button
                             onClick={() => setEditingWallet(m)}
                             title="Edit"
@@ -414,7 +421,6 @@ export default function PageBilling() {
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
-                          {/* Delete */}
                           <button
                             onClick={() => deleteMethod.mutate(m.id)}
                             title="Delete"
@@ -431,7 +437,7 @@ export default function PageBilling() {
             </TableWrapper>
           </div>
 
-          {/* ── Payout History ── */}
+          {/* ── Payout History Table ── */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-white">Payout History</h3>
@@ -439,10 +445,6 @@ export default function PageBilling() {
                 <span className="text-xs text-zinc-600">
                   {(invoices as any[]).length} records
                 </span>
-                <OutlineBtn>
-                  <ArrowUpRight className="w-3 h-3" />
-                  Export
-                </OutlineBtn>
               </div>
             </div>
             <TableWrapper>
@@ -512,27 +514,27 @@ export default function PageBilling() {
           </div>
         </div>
 
-        {/* ── Sidebar info ── */}
+        {/* ── Sidebar Info ── */}
         <div className="rounded-2xl border border-white/6 bg-zinc-900/60 p-5 h-fit space-y-4">
-          <h3 className="text-sm font-bold text-white">Payment Details</h3>
+          <h3 className="text-sm font-bold text-white border-b border-white/10 pb-2">
+            Payment Info
+          </h3>
           {[
             ["Accepted Currency", "USDT"],
             ["Network", "TRC20 (TRON)"],
             ["Min Withdrawal", "$10.00"],
             ["Processing", "1–3 business days"],
-            ["Commission Rate", "10% per deposit"],
           ].map(([l, v]) => (
             <div key={l}>
-              <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
                 {l}
               </p>
-              <p className="text-sm text-zinc-300">{v}</p>
+              <p className="text-sm font-semibold text-zinc-300">{v}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Add/Edit Wallet Modal ── */}
       <AnimatePresence>
         {showAddModal && <WalletModal onClose={() => setShowAddModal(false)} />}
         {editingWallet && (
@@ -542,10 +544,8 @@ export default function PageBilling() {
             onClose={() => setEditingWallet(null)}
           />
         )}
-      </AnimatePresence>
 
-      {/* ── Withdrawal Modal ── */}
-      <AnimatePresence>
+        {/* Withdraw Modal */}
         {showWithdraw && (
           <Modal onClose={() => setShowWithdraw(false)}>
             <h3 className="text-lg font-black text-white mb-2">
@@ -558,30 +558,41 @@ export default function PageBilling() {
               </span>
             </p>
             {!defaultWallet ? (
-              <p className="text-sm text-rose-400 mb-4">
-                Add and set a default payment method first.
+              <p className="text-sm font-bold text-rose-400 mb-4 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">
+                Please add and set a default payment method first.
               </p>
             ) : (
               <>
-                <div className="mb-4 p-3 rounded-xl border border-white/8 bg-zinc-800/60">
-                  <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1">
-                    Sending to
-                  </p>
-                  <p className="text-xs font-mono text-zinc-300">
-                    {fmt.shortAddr(defaultWallet.address)}
-                  </p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">
-                    {defaultWallet.network} · {defaultWallet.currency}
-                    {defaultWallet.label && ` · ${defaultWallet.label}`}
-                  </p>
+                <div className="mb-4 p-3 rounded-xl border border-white/8 bg-zinc-800/60 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-sky-500/20 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">
+                      Sending to
+                    </p>
+                    <p className="text-xs font-mono font-bold text-zinc-300">
+                      {fmt.shortAddr(defaultWallet.address)}
+                    </p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      {defaultWallet.network} · {defaultWallet.currency}
+                    </p>
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  placeholder="Amount (USD)"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40 mb-5"
-                />
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block">
+                    Amount to withdraw (USD)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    placeholder="e.g. 500.00"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-zinc-900 text-lg font-bold text-white focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/50 mb-5"
+                  />
+                </div>
               </>
             )}
             <div className="flex items-center gap-3 justify-end">

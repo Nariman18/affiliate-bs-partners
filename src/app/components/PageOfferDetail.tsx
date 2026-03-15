@@ -8,13 +8,17 @@ import {
   Link as LinkIcon,
   Globe,
   MousePointer2,
-  Info,
+  Copy,
+  TerminalSquare,
+  UserCheck,
 } from "lucide-react";
 import {
   useCreateLink,
   useOffer,
   useRequestOffer,
   useTeam,
+  useOfferRequests,
+  useUpdateOfferRequest,
 } from "../hooks/useDashboard";
 import { ROLES, type AppRole } from "../lib/api";
 import {
@@ -26,9 +30,13 @@ import {
   TableWrapper,
   Td,
   Th,
+  EmptyState,
+  TableSkeleton,
   AmberBtn,
+  OutlineBtn,
   Modal,
 } from "./dashboard/UI";
+import { toast } from "sonner";
 
 interface Props {
   offerId: string;
@@ -82,19 +90,29 @@ const ALL_TRAFFIC_SOURCES = [
 ];
 
 export default function PageOfferDetail({ offerId, role, onBack }: Props) {
-  const [tab, setTab] = useState("Goals");
+  const [tab, setTab] = useState("Tracking Links");
   const [showDistribute, setShowDistribute] = useState(false);
   const [selectedManagerId, setSelectedManagerId] = useState("");
 
-  const { data: offer, isLoading } = useOffer(offerId);
+  const { data: offer, isLoading, refetch } = useOffer(offerId);
   const createLink = useCreateLink();
   const requestOffer = useRequestOffer();
 
-  // Admin/Basic need to pick a Manager to assign the link to
+  // Only fetch requests if the user is an Admin or Basic Sub to avoid 403 errors
+  const { data: requests = [], isLoading: reqLoading } = useOfferRequests(
+    role !== ROLES.MANAGER ? offerId : "",
+  );
+  const updateReq = useUpdateOfferRequest();
+
   const { data: team = [], isLoading: teamLoading } = useTeam();
   const managers = (team as any[]).filter(
     (m: any) => m.role === ROLES.MANAGER || !m.role,
   );
+
+  const TABS =
+    role === ROLES.MANAGER
+      ? ["Tracking Links", "Goals", "Clicks", "Conversions"]
+      : ["Tracking Links", "Access Requests", "Goals", "Clicks", "Conversions"];
 
   if (isLoading) return <Spinner />;
   if (!offer) return <p className="text-zinc-500 text-sm">Offer not found.</p>;
@@ -107,9 +125,23 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
         onSuccess: () => {
           setShowDistribute(false);
           setSelectedManagerId("");
+          refetch(); // Reload to show the new link
         },
       },
     );
+  };
+
+  const handleGenerateTestLink = () => {
+    createLink.mutate(
+      // FIXED: Passed affiliateId as empty string to satisfy TypeScript
+      { offerId: offer.id, affiliateId: "", name: `Test Link - ${offer.name}` },
+      { onSuccess: () => refetch() },
+    );
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
   };
 
   const geoData = COUNTRIES.find((c) => c.code === offer.targetCountry);
@@ -216,12 +248,205 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
       {/* Grid Layout */}
       <div className="grid md:grid-cols-[1fr_280px] gap-8">
         <div>
-          <TabBar
-            tabs={["Goals", "Clicks", "Conversions"]}
-            active={tab}
-            onChange={setTab}
-          />
+          <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
+          {/* ── TRACKING LINKS TAB ── */}
+          {tab === "Tracking Links" && (
+            <div className="mt-4">
+              {(role === ROLES.ADMIN || role === ROLES.BASIC) &&
+                offer.status === "ACTIVE" && (
+                  <div className="flex gap-3 mb-6">
+                    <AmberBtn onClick={() => setShowDistribute(true)}>
+                      <LinkIcon className="w-3.5 h-3.5" /> Distribute Link to
+                      Manager
+                    </AmberBtn>
+                    {role === ROLES.ADMIN && (
+                      <OutlineBtn
+                        onClick={handleGenerateTestLink}
+                        disabled={createLink.isPending}
+                      >
+                        <TerminalSquare className="w-3.5 h-3.5" /> Generate Test
+                        Link
+                      </OutlineBtn>
+                    )}
+                  </div>
+                )}
+
+              <TableWrapper>
+                <thead>
+                  <tr>
+                    <Th>Name</Th>
+                    <Th>Link ID (SubID)</Th>
+                    <Th>Tracking URL</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!offer.links || offer.links.length === 0 ? (
+                    <EmptyState
+                      colSpan={3}
+                      label="No tracking links generated yet."
+                    />
+                  ) : (
+                    offer.links.map((link: any) => (
+                      <tr key={link.id} className="hover:bg-white/2">
+                        <Td>{link.name}</Td>
+                        <Td>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-amber-400 font-bold">
+                              {link.id}
+                            </span>
+                            <button
+                              onClick={() => copyToClipboard(link.id)}
+                              className="text-zinc-500 hover:text-white"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </Td>
+                        <Td>
+                          <div className="flex items-center gap-2">
+                            <code className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-1 rounded truncate max-w-[200px]">
+                              {`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5001"}/track/${link.id}`}
+                            </code>
+                            <button
+                              onClick={() =>
+                                copyToClipboard(
+                                  `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5001"}/track/${link.id}`,
+                                )
+                              }
+                              className="text-zinc-500 hover:text-white"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </TableWrapper>
+              {role === ROLES.ADMIN && (
+                <div className="mt-4 p-4 rounded-xl border border-sky-500/20 bg-sky-500/5">
+                  <h4 className="text-xs font-bold text-sky-400 mb-2 flex items-center gap-2">
+                    <TerminalSquare className="w-3.5 h-3.5" /> How to test
+                    postbacks
+                  </h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed mb-3">
+                    Copy the <strong className="text-amber-400">Link ID</strong>{" "}
+                    from the table above. Open your terminal and run the
+                    following curl command to simulate a successful Casino
+                    deposit:
+                  </p>
+                  <code className="block w-full p-3 rounded-lg bg-black text-[10px] font-mono text-zinc-300 overflow-x-auto whitespace-pre">
+                    {`curl -X POST http://localhost:5001/api/track/postback \\
+-H "Content-Type: application/json" \\
+-H "x-postback-secret: secret" \\
+-d '{
+  "linkId": "PASTE_LINK_ID_HERE",
+  "amount": 150.00,
+  "currency": "USD"
+}'`}
+                  </code>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── ACCESS REQUESTS TAB ── */}
+          {tab === "Access Requests" && (
+            <div className="mt-4">
+              <TableWrapper>
+                <thead>
+                  <tr>
+                    <Th>Affiliate Manager</Th>
+                    <Th>Date</Th>
+                    <Th>Status</Th>
+                    <Th>Actions</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reqLoading ? (
+                    <TableSkeleton rows={3} cols={4} />
+                  ) : requests.length === 0 ? (
+                    <EmptyState
+                      colSpan={4}
+                      label="No access requests for this offer yet."
+                    />
+                  ) : (
+                    requests.map((req: any) => (
+                      <tr key={req.id} className="hover:bg-white/2">
+                        <Td>
+                          <div>
+                            <div className="font-semibold text-white text-sm">
+                              {req.user.username}
+                            </div>
+                            <div className="text-xs text-zinc-500">
+                              {req.user.email}
+                            </div>
+                          </div>
+                        </Td>
+                        <Td>
+                          <span className="text-xs text-zinc-400">
+                            {fmt.date(req.createdAt)}
+                          </span>
+                        </Td>
+                        <Td>
+                          {/* FIXED: Removed "rose" Badge constraint, used a custom span for rejected */}
+                          {req.status === "APPROVED" && (
+                            <Badge variant="green">APPROVED</Badge>
+                          )}
+                          {req.status === "PENDING" && (
+                            <Badge variant="yellow">PENDING</Badge>
+                          )}
+                          {req.status === "REJECTED" && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-wider">
+                              REJECTED
+                            </span>
+                          )}
+                        </Td>
+                        <Td>
+                          {req.status === "PENDING" ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() =>
+                                  updateReq.mutate({
+                                    offerId: offer.id,
+                                    reqId: req.id,
+                                    status: "APPROVED",
+                                  })
+                                }
+                                disabled={updateReq.isPending}
+                                className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateReq.mutate({
+                                    offerId: offer.id,
+                                    reqId: req.id,
+                                    status: "REJECTED",
+                                  })
+                                }
+                                disabled={updateReq.isPending}
+                                className="px-2 py-1 bg-rose-500/15 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/20 hover:bg-rose-500/25 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-zinc-600">—</span>
+                          )}
+                        </Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </TableWrapper>
+            </div>
+          )}
+
+          {/* ── GOALS TAB ── */}
           {tab === "Goals" && (
             <div className="mt-4">
               <TableWrapper>
@@ -265,8 +490,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   </tr>
                 </tbody>
               </TableWrapper>
-
-              {/* Description Section */}
               <div className="mt-8">
                 <h3 className="text-sm font-bold text-white mb-3">
                   Offer Description
@@ -291,59 +514,12 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               </p>
             </div>
           )}
-
-          {/* Manager's own tracking links */}
-          {role === ROLES.MANAGER && offer.links && offer.links.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-sm font-bold text-white mb-3">
-                Your Tracking Links
-              </h3>
-              <TableWrapper>
-                <thead>
-                  <tr>
-                    <Th>Name</Th>
-                    <Th>Sub ID</Th>
-                    <Th>Tracking URL</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {offer.links.map((link: any) => (
-                    <tr key={link.id} className="hover:bg-white/2">
-                      <Td>{link.name}</Td>
-                      <Td>
-                        <span className="font-mono text-xs text-zinc-500">
-                          {link.subId ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <code className="text-xs font-mono text-sky-400 bg-sky-400/10 px-2 py-1 rounded">
-                          {`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}/track/${link.id}`}
-                        </code>
-                      </Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </TableWrapper>
-            </div>
-          )}
-
-          {/* Admin / Basic Sub: distribute a link to a Manager */}
-          {(role === ROLES.ADMIN || role === ROLES.BASIC) &&
-            offer.status === "ACTIVE" && (
-              <div className="mt-8">
-                <AmberBtn onClick={() => setShowDistribute(true)}>
-                  <LinkIcon className="w-3.5 h-3.5" /> Distribute Link to
-                  Manager
-                </AmberBtn>
-              </div>
-            )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-4 pt-[52px]">
-          {/* Stats Box (Category, EPC, CR, AR, Lifespan) */}
+          {/* Stats Box */}
           <div className="rounded-2xl border border-white/6 bg-zinc-900/60 overflow-hidden">
-            {/* Row: Category */}
             <div className="flex items-center justify-between p-4 border-b border-white/5">
               <span className="text-sm font-semibold text-zinc-400">
                 Category
@@ -352,43 +528,31 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                 {offer.category ?? "—"}
               </span>
             </div>
-            {/* Row: EPC */}
             <div className="flex items-center justify-between p-4 bg-white/[0.02] border-b border-white/5">
               <span className="text-sm font-semibold text-zinc-400">EPC</span>
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className="font-bold">
-                  {offer.epc ? fmt.usd(offer.epc) : "—"}
-                </span>
-              </div>
+              <span className="font-bold text-zinc-300">
+                {offer.epc ? fmt.usd(offer.epc) : "—"}
+              </span>
             </div>
-            {/* Row: CR */}
             <div className="flex items-center justify-between p-4 border-b border-white/5">
               <span className="text-sm font-semibold text-zinc-400">CR</span>
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className="font-bold">
-                  {offer.cr ? `${offer.cr}%` : "—"}
-                </span>
-              </div>
+              <span className="font-bold text-zinc-300">
+                {offer.cr ? `${offer.cr}%` : "—"}
+              </span>
             </div>
-            {/* Row: AR */}
             <div className="flex items-center justify-between p-4 bg-white/[0.02] border-b border-white/5">
               <span className="text-sm font-semibold text-zinc-400">AR</span>
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className="font-bold">
-                  {offer.ar ? `${offer.ar}%` : "—"}
-                </span>
-              </div>
+              <span className="font-bold text-zinc-300">
+                {offer.ar ? `${offer.ar}%` : "—"}
+              </span>
             </div>
-            {/* Row: Click Session Lifespan */}
             <div className="flex items-center justify-between p-4">
               <span className="text-sm font-semibold text-zinc-400 leading-tight">
                 Click Session
                 <br />
                 Lifespan
               </span>
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <span className="font-bold">14 days</span>
-              </div>
+              <span className="font-bold text-zinc-300">14 days</span>
             </div>
           </div>
 
@@ -449,7 +613,8 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               Distribute Tracking Link
             </h3>
             <p className="text-xs text-zinc-500 mb-5">
-              Select the Affiliate Manager who will use this link.
+              Select the Affiliate Manager who will use this link. Note: You
+              should approve their request first if they sent one!
             </p>
             {teamLoading ? (
               <div className="h-10 bg-zinc-800 rounded-xl animate-pulse mb-5" />
