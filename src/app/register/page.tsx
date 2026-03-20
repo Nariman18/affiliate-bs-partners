@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowUpRight,
@@ -55,7 +55,8 @@ const ROLE_LABELS: Record<string, string> = {
   [ROLES.ADMIN]: "Admin Sub-Affiliate",
 };
 
-export default function RegisterPage() {
+// ─── Extracted Inner Component ────────────────────────────────────────────────
+function RegisterForm() {
   const searchParams = useSearchParams();
   const refId = searchParams.get("ref") ?? undefined;
   const roleFromUrl = searchParams.get("role") ?? ROLES.MANAGER;
@@ -314,6 +315,22 @@ export default function RegisterPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-transparent to-transparent opacity-80 pointer-events-none" />
       </div>
     </div>
+  );
+}
+
+// ─── Main Default Export with Suspense ─────────────────────────────────────────
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-full bg-[#080808] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }
 
