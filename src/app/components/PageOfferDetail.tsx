@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ChevronRight,
@@ -10,6 +10,7 @@ import {
   MousePointer2,
   Copy,
   TerminalSquare,
+  ChevronDown,
 } from "lucide-react";
 import {
   useCreateLink,
@@ -37,6 +38,7 @@ import {
   Modal,
 } from "./dashboard/UI";
 import { toast } from "sonner";
+import { CATEGORIES, COUNTRIES } from "../lib/utils";
 
 interface Props {
   offerId: string;
@@ -44,55 +46,98 @@ interface Props {
   onBack: () => void;
 }
 
-const COUNTRIES = [
-  { code: "US", name: "United States", flag: "🇺🇸" },
-  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "DE", name: "Germany", flag: "🇩🇪" },
-  { code: "FR", name: "France", flag: "🇫🇷" },
-  { code: "IT", name: "Italy", flag: "🇮🇹" },
-  { code: "PL", name: "Poland", flag: "🇵🇱" },
-  { code: "ES", name: "Spain", flag: "🇪🇸" },
-  { code: "NL", name: "Netherlands", flag: "🇳🇱" },
-  { code: "BR", name: "Brazil", flag: "🇧🇷" },
-  { code: "CA", name: "Canada", flag: "🇨🇦" },
-  { code: "AU", name: "Australia", flag: "🇦🇺" },
-  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
-  { code: "IN", name: "India", flag: "🇮🇳" },
-  { code: "MX", name: "Mexico", flag: "🇲🇽" },
-  { code: "RU", name: "Russia", flag: "🇷🇺" },
-  { code: "TR", name: "Turkey", flag: "🇹🇷" },
-  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
-  { code: "JP", name: "Japan", flag: "🇯🇵" },
-  { code: "KR", name: "South Korea", flag: "🇰🇷" },
-  { code: "AR", name: "Argentina", flag: "🇦🇷" },
-  { code: "CL", name: "Chile", flag: "🇨🇱" },
-  { code: "CO", name: "Colombia", flag: "🇨🇴" },
-  { code: "EG", name: "Egypt", flag: "🇪🇬" },
-  { code: "UA", name: "Ukraine", flag: "🇺🇦" },
-  { code: "RO", name: "Romania", flag: "🇷🇴" },
-  { code: "HU", name: "Hungary", flag: "🇭🇺" },
-  { code: "CZ", name: "Czech Republic", flag: "🇨🇿" },
-  { code: "SK", name: "Slovakia", flag: "🇸🇰" },
-  { code: "PT", name: "Portugal", flag: "🇵🇹" },
-  { code: "GR", name: "Greece", flag: "🇬🇷" },
-];
+// Helper to grab token
+const getHeaders = () => {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
-const ALL_TRAFFIC_SOURCES = [
-  "Facebook",
-  "ASO",
-  "PPC",
-  "SEO",
-  "In-App",
-  "Email",
-  "Push",
-  "UAC",
-  "FB Apps",
-];
+// ─── Custom Form Select for Modals ─────────────────────────────────────────────
+function FormSelect({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: React.ReactNode }[];
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOpt = options.find((o) => o.value === value);
+
+  return (
+    <div className="relative w-full mb-5" ref={ref}>
+      {label && (
+        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 block">
+          {label}
+        </label>
+      )}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
+      >
+        <span className="truncate">{selectedOpt?.label || "Select..."}</span>
+        <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-white/10 bg-zinc-900 shadow-2xl max-h-48 overflow-y-auto py-1"
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  value === opt.value
+                    ? "text-amber-400 bg-white/5"
+                    : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function PageOfferDetail({ offerId, role, onBack }: Props) {
   const [tab, setTab] = useState("Tracking Links");
   const [showDistribute, setShowDistribute] = useState(false);
   const [selectedManagerId, setSelectedManagerId] = useState("");
+
+  const [clicks, setClicks] = useState<any[]>([]);
+  const [conversions, setConversions] = useState<any[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const { data: offer, isLoading, refetch } = useOffer(offerId);
   const createLink = useCreateLink();
@@ -108,10 +153,33 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
 
   const managers = team as any[];
 
+  // Define logic for distributing for Admin vs Basic Sub
+  const availableManagers = managers.filter((m: any) => {
+    if (m.role !== ROLES.MANAGER) return false;
+    // Admins distribute directly to managers who do NOT have a Basic supervisor
+    if (role === ROLES.ADMIN) return !m.supervisorId;
+    return true; // Basic users already receive only their own team managers from backend
+  });
+
   const TABS =
     role === ROLES.MANAGER
       ? ["Tracking Links", "Goals", "Clicks", "Conversions"]
       : ["Tracking Links", "Access Requests", "Goals", "Clicks", "Conversions"];
+
+  // Fetch stats when Clicks or Conversions tab is active
+  useEffect(() => {
+    if (tab === "Clicks" || tab === "Conversions") {
+      setStatsLoading(true);
+      const url = `${process.env.NEXT_PUBLIC_API_URL || "/api"}/offers/${offerId}/${tab.toLowerCase()}`;
+      fetch(url, { headers: getHeaders() })
+        .then((r) => r.json())
+        .then((data) => {
+          if (tab === "Clicks") setClicks(data);
+          if (tab === "Conversions") setConversions(data);
+        })
+        .finally(() => setStatsLoading(false));
+    }
+  }, [tab, offerId]);
 
   if (isLoading) return <Spinner />;
   if (!offer) return <p className="text-zinc-500 text-sm">Offer not found.</p>;
@@ -142,11 +210,29 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
     toast.success("Copied to clipboard!");
   };
 
-  const geoData = COUNTRIES.find((c) => c.code === offer.targetCountry);
+  const geoData = COUNTRIES.find((c: any) => c.code === offer.targetCountry);
   const displayLinks =
     role === ROLES.MANAGER
       ? myLinks.filter((link: any) => link.offerId === offer.id)
       : offer.links;
+
+  // Dynamically build the sidebar stats depending on the user's role
+  const sidebarStats = [
+    { label: "Category", value: offer.category ?? "—" },
+    ...(role === ROLES.ADMIN || role === ROLES.BASIC
+      ? [
+          {
+            label: "Commission",
+            value:
+              offer.commissionPct != null ? fmt.pct(offer.commissionPct) : "—",
+          },
+        ]
+      : []),
+    { label: "EPC", value: offer.epc ? fmt.usd(offer.epc) : "—" },
+    { label: "CR", value: offer.cr ? `${offer.cr}%` : "—" },
+    { label: "AR", value: offer.ar ? `${offer.ar}%` : "—" },
+    { label: "Session Lifespan", value: "14 days" },
+  ];
 
   return (
     <motion.div
@@ -254,12 +340,11 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               {(role === ROLES.ADMIN || role === ROLES.BASIC) &&
                 offer.status === "ACTIVE" && (
                   <div className="flex gap-3 mb-6">
-                    {role === ROLES.BASIC && (
-                      <AmberBtn onClick={() => setShowDistribute(true)}>
-                        <LinkIcon className="w-3.5 h-3.5" /> Distribute Link to
-                        Manager
-                      </AmberBtn>
-                    )}
+                    {/* Distribute link action now available for Admin and Basic */}
+                    <AmberBtn onClick={() => setShowDistribute(true)}>
+                      <LinkIcon className="w-3.5 h-3.5" /> Distribute Link to
+                      Manager
+                    </AmberBtn>
                     {role === ROLES.ADMIN && (
                       <OutlineBtn
                         onClick={handleGenerateTestLink}
@@ -309,12 +394,12 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                         <Td>
                           <div className="flex items-center gap-2">
                             <code className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-1 rounded truncate max-w-[200px]">
-                              {`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5001"}/track/${link.id}`}
+                              {`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"}/track/${link.id}`}
                             </code>
                             <button
                               onClick={() =>
                                 copyToClipboard(
-                                  `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5001"}/track/${link.id}`,
+                                  `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"}/track/${link.id}`,
                                 )
                               }
                               className="text-zinc-500 hover:text-white"
@@ -533,11 +618,114 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
             </div>
           )}
 
-          {(tab === "Clicks" || tab === "Conversions") && (
-            <div className="mt-4 rounded-2xl border border-white/6 bg-zinc-900/50 p-8 text-center">
-              <p className="text-zinc-600 text-sm">
-                No data for the selected period.
-              </p>
+          {/* ── CLICKS ── */}
+          {tab === "Clicks" && (
+            <div className="mt-4">
+              <TableWrapper>
+                <thead>
+                  <tr>
+                    <Th>Date</Th>
+                    <Th>IP Address</Th>
+                    <Th>Country</Th>
+                    <Th>Device</Th>
+                    <Th>OS</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {statsLoading ? (
+                    <TableSkeleton rows={5} cols={5} />
+                  ) : clicks.length === 0 ? (
+                    <EmptyState colSpan={5} label="No clicks recorded yet." />
+                  ) : (
+                    clicks.map((click) => (
+                      <tr key={click.id} className="hover:bg-white/2">
+                        <Td>
+                          <span className="text-xs text-zinc-400">
+                            {fmt.date(click.createdAt)}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="font-mono text-xs text-zinc-300">
+                            {click.ipAddress}
+                          </span>
+                        </Td>
+                        <Td>
+                          <Badge variant="default">{click.country}</Badge>
+                        </Td>
+                        <Td>
+                          <span className="text-xs text-zinc-300">
+                            {click.deviceType}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="text-xs text-zinc-300">
+                            {click.os}
+                          </span>
+                        </Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </TableWrapper>
+            </div>
+          )}
+
+          {/* ── CONVERSIONS ── */}
+          {tab === "Conversions" && (
+            <div className="mt-4">
+              <TableWrapper>
+                <thead>
+                  <tr>
+                    <Th>Date</Th>
+                    <Th>Sub ID</Th>
+                    <Th>Amount</Th>
+                    <Th>Status</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {statsLoading ? (
+                    <TableSkeleton rows={5} cols={4} />
+                  ) : conversions.length === 0 ? (
+                    <EmptyState
+                      colSpan={4}
+                      label="No conversions recorded yet."
+                    />
+                  ) : (
+                    conversions.map((conv) => (
+                      <tr key={conv.id} className="hover:bg-white/2">
+                        <Td>
+                          <span className="text-xs text-zinc-400">
+                            {fmt.date(conv.createdAt)}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="font-mono text-xs text-zinc-300 bg-white/5 px-2 py-1 rounded">
+                            {conv.subId || "—"}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="font-bold text-emerald-400">
+                            {fmt.usd(conv.amount)}
+                          </span>
+                        </Td>
+                        <Td>
+                          <Badge
+                            variant={
+                              conv.status === "APPROVED"
+                                ? "green"
+                                : conv.status === "PENDING"
+                                  ? "yellow"
+                                  : "default"
+                            }
+                          >
+                            {conv.status}
+                          </Badge>
+                        </Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </TableWrapper>
             </div>
           )}
         </div>
@@ -545,13 +733,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
         {/* Sidebar */}
         <div className="space-y-4 md:pt-[52px]">
           <div className="rounded-2xl border border-white/6 bg-zinc-900/60 overflow-hidden">
-            {[
-              { label: "Category", value: offer.category ?? "—" },
-              { label: "EPC", value: offer.epc ? fmt.usd(offer.epc) : "—" },
-              { label: "CR", value: offer.cr ? `${offer.cr}%` : "—" },
-              { label: "AR", value: offer.ar ? `${offer.ar}%` : "—" },
-              { label: "Session Lifespan", value: "14 days" },
-            ].map(({ label, value }, i) => (
+            {sidebarStats.map(({ label, value }, i) => (
               <div
                 key={label}
                 className={`flex items-center justify-between p-4 border-b border-white/5 ${i % 2 === 1 ? "bg-white/[0.02]" : ""}`}
@@ -588,7 +770,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               <MousePointer2 className="w-4 h-4" /> Traffic Sources
             </h3>
             <div className="flex flex-wrap gap-2">
-              {ALL_TRAFFIC_SOURCES.map((ts) => (
+              {CATEGORIES.filter((c: any) => c !== "All").map((ts: any) => (
                 <span
                   key={ts}
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${offer.category === ts ? "bg-amber-400/10 border-amber-400/30 text-amber-400" : "bg-zinc-800/50 border-white/5 text-zinc-600"}`}
@@ -614,24 +796,22 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
             {teamLoading ? (
               <div className="h-10 bg-zinc-800 rounded-xl animate-pulse mb-5" />
             ) : (
-              <select
+              <FormSelect
                 value={selectedManagerId}
-                onChange={(e) => setSelectedManagerId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-zinc-800 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40 mb-5"
-              >
-                <option value="">— Select a manager —</option>
-                {managers.map((m: any) => {
-                  const isApproved = (requests as any[]).some(
-                    (r: any) => r.user.id === m.id && r.status === "APPROVED",
-                  );
-                  return (
-                    <option key={m.id} value={m.id}>
-                      {m.displayName ?? m.username} ({m.email})
-                      {isApproved ? " ✅" : ""}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={setSelectedManagerId}
+                options={[
+                  { value: "", label: "— Select a manager —" },
+                  ...availableManagers.map((m: any) => {
+                    const isApproved = (requests as any[]).some(
+                      (r: any) => r.user.id === m.id && r.status === "APPROVED",
+                    );
+                    return {
+                      value: m.id,
+                      label: `${m.displayName ?? m.username} (${m.email})${isApproved ? " ✅" : ""}`,
+                    };
+                  }),
+                ]}
+              />
             )}
             <div className="flex gap-3 justify-end">
               <button
