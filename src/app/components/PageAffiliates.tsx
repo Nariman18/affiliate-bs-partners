@@ -89,7 +89,7 @@ export default function PageAffiliates() {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="grid md:grid-cols-4 gap-4 mb-7"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-7"
       >
         <StatCard
           label="Total Affiliates"
@@ -123,6 +123,7 @@ export default function PageAffiliates() {
             <Th>Commission</Th>
             <Th>Default Wallet</Th>
             <Th>Joined</Th>
+            <Th>{""}</Th>
           </tr>
         </thead>
         <tbody>

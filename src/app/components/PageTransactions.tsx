@@ -23,6 +23,7 @@ import {
   pageIn,
   SectionHeader,
   fmt,
+  PaginationBar,
 } from "./dashboard/UI";
 import {
   useClicks,
@@ -32,6 +33,7 @@ import {
 } from "../hooks/useDashboard";
 import { type AppRole } from "../lib/api";
 
+const PAGE_SIZE = 10;
 const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -228,6 +230,21 @@ export default function PageTransactions({ role: _role }: { role: AppRole }) {
   const [dateFrom, setDateFrom] = useState(daysAgo(30));
   const [dateTo, setDateTo] = useState(today());
   const [offerId, setOfferId] = useState("");
+  const [page, setPage] = useState(1);
+
+  const handleTabChange = (t: string) => {
+    setTab(t);
+    setPage(1);
+  };
+  const handleDateChange = (f: string, t: string) => {
+    setDateFrom(f);
+    setDateTo(t);
+    setPage(1);
+  };
+  const handleOfferChange = (v: string) => {
+    setOfferId(v);
+    setPage(1);
+  };
 
   const params = useMemo(
     () => ({ from: dateFrom, to: dateTo }),
@@ -236,8 +253,9 @@ export default function PageTransactions({ role: _role }: { role: AppRole }) {
   const conversions = useConversions({
     ...params,
     offerId: offerId || undefined,
+    page,
   });
-  const clicks = useClicks(params);
+  const clicks = useClicks({ ...params, page });
   const postbacks = usePostbacks(params);
   const { data: allOffers = [] } = useOffers();
 
@@ -267,26 +285,19 @@ export default function PageTransactions({ role: _role }: { role: AppRole }) {
           "Affiliates Postbacks",
         ]}
         active={tab}
-        onChange={setTab}
+        onChange={handleTabChange}
       />
 
       <FilterBar>
-        <DatePicker
-          from={dateFrom}
-          to={dateTo}
-          onChange={(f, t) => {
-            setDateFrom(f);
-            setDateTo(t);
-          }}
-        />
+        <DatePicker from={dateFrom} to={dateTo} onChange={handleDateChange} />
         <OfferFilter
           value={offerId}
-          onChange={setOfferId}
+          onChange={handleOfferChange}
           offers={allOffers as any[]}
         />
         {offerId && (
           <button
-            onClick={() => setOfferId("")}
+            onClick={() => handleOfferChange("")}
             className="flex items-center gap-1 text-[11px] text-zinc-600 hover:text-rose-400 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -308,280 +319,317 @@ export default function PageTransactions({ role: _role }: { role: AppRole }) {
 
       {/* ── Conversions ── */}
       {tab === "Conversions" && (
-        <TableWrapper>
-          <thead>
-            <tr>
-              <Th>Date</Th>
-              <Th>Status</Th>
-              <Th>Offer</Th>
-              <Th>Deposit</Th>
-              <Th>Commission</Th>
-              <Th>Sub ID</Th>
-              <Th>Link</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {conversions.isLoading ? (
-              <TableSkeleton rows={5} cols={7} />
-            ) : (conversions.data?.data ?? []).length === 0 ? (
-              <EmptyState colSpan={7} />
-            ) : (
-              (conversions.data?.data ?? []).map((d: any) => (
-                <tr key={d.id} className="hover:bg-white/2">
-                  <Td>
-                    <span className="text-xs">{fmt.dateTime(d.createdAt)}</span>
-                  </Td>
-                  <Td>
-                    <Badge
-                      variant={
-                        d.status === "confirmed" || d.status === "CONFIRMED"
-                          ? "green"
-                          : "yellow"
-                      }
-                    >
-                      {d.status}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <span className="text-zinc-300 text-xs">
-                      {d.link?.offer?.name ?? "—"}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="font-semibold text-emerald-400">
-                      {fmt.usd(d.amount)}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="font-semibold text-amber-400">
-                      {fmt.usd(d.commissions?.[0]?.amount ?? 0)}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="font-mono text-xs text-zinc-500">
-                      {d.subId ?? "—"}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="text-xs text-zinc-500 truncate max-w-[100px] block">
-                      {d.link?.name ?? "—"}
-                    </span>
-                  </Td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </TableWrapper>
+        <>
+          <TableWrapper>
+            <thead>
+              <tr>
+                <Th>Date</Th>
+                <Th>Status</Th>
+                <Th className="hidden sm:table-cell">Offer</Th>
+                <Th>Deposit</Th>
+                <Th>Commission</Th>
+                <Th className="hidden md:table-cell">Sub ID</Th>
+                <Th className="hidden lg:table-cell">Link</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {conversions.isLoading ? (
+                <TableSkeleton rows={5} cols={7} />
+              ) : (conversions.data?.data ?? []).length === 0 ? (
+                <EmptyState colSpan={7} />
+              ) : (
+                (conversions.data?.data ?? []).map((d: any) => (
+                  <tr key={d.id} className="hover:bg-white/2">
+                    <Td>
+                      <span className="text-xs">
+                        {fmt.dateTime(d.createdAt)}
+                      </span>
+                    </Td>
+                    <Td>
+                      <Badge
+                        variant={
+                          d.status === "confirmed" || d.status === "CONFIRMED"
+                            ? "green"
+                            : "yellow"
+                        }
+                      >
+                        {d.status}
+                      </Badge>
+                    </Td>
+                    <Td className="hidden sm:table-cell">
+                      <span className="text-zinc-300 text-xs">
+                        {d.link?.offer?.name ?? "—"}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="font-semibold text-emerald-400">
+                        {fmt.usd(d.amount)}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="font-semibold text-amber-400">
+                        {fmt.usd(d.commissions?.[0]?.amount ?? 0)}
+                      </span>
+                    </Td>
+                    <Td className="hidden md:table-cell">
+                      <span className="font-mono text-xs text-zinc-500">
+                        {d.subId ?? "—"}
+                      </span>
+                    </Td>
+                    <Td className="hidden lg:table-cell">
+                      <span className="text-xs text-zinc-500 truncate max-w-[100px] block">
+                        {d.link?.name ?? "—"}
+                      </span>
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </TableWrapper>
+          <PaginationBar
+            currentPage={page}
+            totalPages={
+              Math.ceil((conversions.data?.total ?? 0) / PAGE_SIZE) || 1
+            }
+            onPageChange={setPage}
+            totalItems={conversions.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
+        </>
       )}
 
       {/* ── Clicks ── */}
       {tab === "Clicks" && (
-        <TableWrapper>
-          <thead>
-            <tr>
-              <Th>Date</Th>
-              <Th>Offer</Th>
-              <Th>Link</Th>
-              <Th>Click ID</Th>
-              <Th>Sub ID</Th>
-              <Th>Device</Th>
-              <Th>IP</Th>
-              <Th>Unique</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {clicks.isLoading ? (
-              <TableSkeleton rows={5} cols={8} />
-            ) : (
-              (() => {
-                const rows = (clicks.data?.data ?? []).filter(
-                  (c: any) => !c.isInvalid,
-                );
-                return rows.length === 0 ? (
-                  <EmptyState colSpan={8} />
-                ) : (
-                  rows.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-white/2">
-                      <Td>
-                        <span className="text-xs">
-                          {fmt.dateTime(c.createdAt)}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="text-xs text-zinc-300">
-                          {c.link?.offer?.name ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="text-xs text-zinc-400">
-                          {c.link?.name ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="font-mono text-xs text-zinc-500">
-                          {c.id.slice(-12)}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="font-mono text-xs text-zinc-500">
-                          {c.link?.subId ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <Badge variant="blue">
-                          {c.deviceType ?? "unknown"}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <span className="text-xs text-zinc-500">
-                          {c.ipAddress ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <Badge variant={c.isUnique ? "green" : "yellow"}>
-                          {c.isUnique ? "Unique" : "Dupe"}
-                        </Badge>
-                      </Td>
-                    </tr>
-                  ))
-                );
-              })()
-            )}
-          </tbody>
-        </TableWrapper>
+        <>
+          <TableWrapper>
+            <thead>
+              <tr>
+                <Th>Date</Th>
+                <Th className="hidden sm:table-cell">Offer</Th>
+                <Th className="hidden md:table-cell">Link</Th>
+                <Th className="hidden lg:table-cell">Click ID</Th>
+                <Th className="hidden lg:table-cell">Sub ID</Th>
+                <Th>Device</Th>
+                <Th className="hidden md:table-cell">IP</Th>
+                <Th>Unique</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {clicks.isLoading ? (
+                <TableSkeleton rows={5} cols={8} />
+              ) : (
+                (() => {
+                  const rows = (clicks.data?.data ?? []).filter(
+                    (c: any) => !c.isInvalid,
+                  );
+                  return rows.length === 0 ? (
+                    <EmptyState colSpan={8} />
+                  ) : (
+                    rows.map((c: any) => (
+                      <tr key={c.id} className="hover:bg-white/2">
+                        <Td>
+                          <span className="text-xs">
+                            {fmt.dateTime(c.createdAt)}
+                          </span>
+                        </Td>
+                        <Td className="hidden sm:table-cell">
+                          <span className="text-xs text-zinc-300">
+                            {c.link?.offer?.name ?? "—"}
+                          </span>
+                        </Td>
+                        <Td className="hidden md:table-cell">
+                          <span className="text-xs text-zinc-400">
+                            {c.link?.name ?? "—"}
+                          </span>
+                        </Td>
+                        <Td className="hidden lg:table-cell">
+                          <span className="font-mono text-xs text-zinc-500">
+                            {c.id.slice(-12)}
+                          </span>
+                        </Td>
+                        <Td className="hidden lg:table-cell">
+                          <span className="font-mono text-xs text-zinc-500">
+                            {c.link?.subId ?? "—"}
+                          </span>
+                        </Td>
+                        <Td>
+                          <Badge variant="blue">
+                            {c.deviceType ?? "unknown"}
+                          </Badge>
+                        </Td>
+                        <Td className="hidden md:table-cell">
+                          <span className="text-xs text-zinc-500">
+                            {c.ipAddress ?? "—"}
+                          </span>
+                        </Td>
+                        <Td>
+                          <Badge variant={c.isUnique ? "green" : "yellow"}>
+                            {c.isUnique ? "Unique" : "Dupe"}
+                          </Badge>
+                        </Td>
+                      </tr>
+                    ))
+                  );
+                })()
+              )}
+            </tbody>
+          </TableWrapper>
+          <PaginationBar
+            currentPage={page}
+            totalPages={Math.ceil((clicks.data?.total ?? 0) / PAGE_SIZE) || 1}
+            onPageChange={setPage}
+            totalItems={clicks.data?.total ?? 0}
+            pageSize={PAGE_SIZE}
+          />
+        </>
       )}
 
       {/* ── Invalid Clicks ── */}
       {tab === "Invalid Clicks" && (
-        <TableWrapper>
-          <thead>
-            <tr>
-              <Th>Date</Th>
-              <Th>Offer</Th>
-              <Th>Link</Th>
-              <Th>Click ID</Th>
-              <Th>Device</Th>
-              <Th>IP</Th>
-              <Th>Reason</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {clicks.isLoading ? (
-              <TableSkeleton rows={5} cols={7} />
-            ) : (
-              (() => {
-                const rows = (clicks.data?.data ?? []).filter(
-                  (c: any) => c.isInvalid,
-                );
-                return rows.length === 0 ? (
-                  <EmptyState colSpan={7} label="No invalid clicks." />
-                ) : (
-                  rows.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-white/2">
-                      <Td>
-                        <span className="text-xs">
-                          {fmt.dateTime(c.createdAt)}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="text-xs text-zinc-300">
-                          {c.link?.offer?.name ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="text-xs text-zinc-400">
-                          {c.link?.name ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span className="font-mono text-xs text-zinc-500">
-                          {c.id.slice(-12)}
-                        </span>
-                      </Td>
-                      <Td>
-                        <Badge variant="blue">
-                          {c.deviceType ?? "unknown"}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <span className="text-xs text-zinc-500">
-                          {c.ipAddress ?? "—"}
-                        </span>
-                      </Td>
-                      <Td>
-                        <Badge variant="red">Invalid</Badge>
-                      </Td>
-                    </tr>
-                  ))
-                );
-              })()
-            )}
-          </tbody>
-        </TableWrapper>
+        <>
+          <TableWrapper>
+            <thead>
+              <tr>
+                <Th>Date</Th>
+                <Th className="hidden sm:table-cell">Offer</Th>
+                <Th className="hidden md:table-cell">Link</Th>
+                <Th className="hidden lg:table-cell">Click ID</Th>
+                <Th>Device</Th>
+                <Th className="hidden md:table-cell">IP</Th>
+                <Th>Reason</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {clicks.isLoading ? (
+                <TableSkeleton rows={5} cols={7} />
+              ) : (
+                (() => {
+                  const rows = (clicks.data?.data ?? []).filter(
+                    (c: any) => c.isInvalid,
+                  );
+                  return rows.length === 0 ? (
+                    <EmptyState colSpan={7} label="No invalid clicks." />
+                  ) : (
+                    rows.map((c: any) => (
+                      <tr key={c.id} className="hover:bg-white/2">
+                        <Td>
+                          <span className="text-xs">
+                            {fmt.dateTime(c.createdAt)}
+                          </span>
+                        </Td>
+                        <Td className="hidden sm:table-cell">
+                          <span className="text-xs text-zinc-300">
+                            {c.link?.offer?.name ?? "—"}
+                          </span>
+                        </Td>
+                        <Td className="hidden md:table-cell">
+                          <span className="text-xs text-zinc-400">
+                            {c.link?.name ?? "—"}
+                          </span>
+                        </Td>
+                        <Td className="hidden lg:table-cell">
+                          <span className="font-mono text-xs text-zinc-500">
+                            {c.id.slice(-12)}
+                          </span>
+                        </Td>
+                        <Td>
+                          <Badge variant="blue">
+                            {c.deviceType ?? "unknown"}
+                          </Badge>
+                        </Td>
+                        <Td className="hidden md:table-cell">
+                          <span className="text-xs text-zinc-500">
+                            {c.ipAddress ?? "—"}
+                          </span>
+                        </Td>
+                        <Td>
+                          <Badge variant="red">Invalid</Badge>
+                        </Td>
+                      </tr>
+                    ))
+                  );
+                })()
+              )}
+            </tbody>
+          </TableWrapper>
+        </>
       )}
 
       {/* ── Postbacks ── */}
       {tab === "Affiliates Postbacks" && (
-        <TableWrapper>
-          <thead>
-            <tr>
-              <Th>Date</Th>
-              <Th>Offer</Th>
-              <Th>Link</Th>
-              <Th>Sub ID</Th>
-              <Th>Amount</Th>
-              <Th>Commission</Th>
-              <Th>Status</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {postbacks.isLoading ? (
-              <TableSkeleton rows={5} cols={7} />
-            ) : (postbacks.data ?? []).length === 0 ? (
-              <EmptyState colSpan={7} />
-            ) : (
-              (postbacks.data ?? []).map((p: any) => (
-                <tr key={p.id} className="hover:bg-white/2">
-                  <Td>
-                    <span className="text-xs">{fmt.dateTime(p.createdAt)}</span>
-                  </Td>
-                  <Td>
-                    <span className="text-xs text-zinc-300">
-                      {p.link?.offer?.name ?? "—"}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="text-xs text-zinc-400">
-                      {p.link?.name ?? "—"}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="font-mono text-xs text-zinc-500">
-                      {p.subId ?? "—"}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="font-semibold text-emerald-400">
-                      {fmt.usd(p.amount)}
-                    </span>
-                  </Td>
-                  <Td>
-                    <span className="font-semibold text-amber-400">
-                      {fmt.usd(p.commissions?.[0]?.amount ?? 0)}
-                    </span>
-                  </Td>
-                  <Td>
-                    <Badge
-                      variant={p.status === "confirmed" ? "green" : "yellow"}
-                    >
-                      {p.status}
-                    </Badge>
-                  </Td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </TableWrapper>
+        <>
+          <TableWrapper>
+            <thead>
+              <tr>
+                <Th>Date</Th>
+                <Th className="hidden sm:table-cell">Offer</Th>
+                <Th className="hidden md:table-cell">Link</Th>
+                <Th className="hidden lg:table-cell">Sub ID</Th>
+                <Th>Amount</Th>
+                <Th>Commission</Th>
+                <Th>Status</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {postbacks.isLoading ? (
+                <TableSkeleton rows={5} cols={7} />
+              ) : (postbacks.data ?? []).length === 0 ? (
+                <EmptyState colSpan={7} />
+              ) : (
+                (postbacks.data ?? []).map((p: any) => (
+                  <tr key={p.id} className="hover:bg-white/2">
+                    <Td>
+                      <span className="text-xs">
+                        {fmt.dateTime(p.createdAt)}
+                      </span>
+                    </Td>
+                    <Td className="hidden sm:table-cell">
+                      <span className="text-xs text-zinc-300">
+                        {p.link?.offer?.name ?? "—"}
+                      </span>
+                    </Td>
+                    <Td className="hidden md:table-cell">
+                      <span className="text-xs text-zinc-400">
+                        {p.link?.name ?? "—"}
+                      </span>
+                    </Td>
+                    <Td className="hidden lg:table-cell">
+                      <span className="font-mono text-xs text-zinc-500">
+                        {p.subId ?? "—"}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="font-semibold text-emerald-400">
+                        {fmt.usd(p.amount)}
+                      </span>
+                    </Td>
+                    <Td>
+                      <span className="font-semibold text-amber-400">
+                        {fmt.usd(p.commissions?.[0]?.amount ?? 0)}
+                      </span>
+                    </Td>
+                    <Td>
+                      <Badge
+                        variant={p.status === "confirmed" ? "green" : "yellow"}
+                      >
+                        {p.status}
+                      </Badge>
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </TableWrapper>
+          <PaginationBar
+            currentPage={page}
+            totalPages={
+              Math.ceil((postbacks.data?.length ?? 0) / PAGE_SIZE) || 1
+            }
+            onPageChange={setPage}
+            totalItems={postbacks.data?.length ?? 0}
+            pageSize={PAGE_SIZE}
+          />
+        </>
       )}
     </motion.div>
   );

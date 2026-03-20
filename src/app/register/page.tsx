@@ -1,16 +1,24 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowUpRight, Lock, Mail, Eye, EyeOff, AtSign } from "lucide-react";
+import {
+  ArrowUpRight,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  AtSign,
+  ChevronDown,
+} from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useRegister } from "../hooks/useAuth";
+import { ROLES } from "../lib/api";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
-// ── Inline client-side validation ─────────────────────────────────────────────
 function validate(
   username: string,
   email: string,
@@ -41,17 +49,22 @@ function validate(
   return e;
 }
 
-// FIX: Extracted your main logic into a child component
-function RegisterContent() {
+const ROLE_LABELS: Record<string, string> = {
+  [ROLES.MANAGER]: "Affiliate Manager",
+  [ROLES.BASIC]: "Basic Sub-Affiliate",
+  [ROLES.ADMIN]: "Admin Sub-Affiliate",
+};
+
+export default function RegisterPage() {
   const searchParams = useSearchParams();
   const refId = searchParams.get("ref") ?? undefined;
+  const roleFromUrl = searchParams.get("role") ?? ROLES.MANAGER;
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [role, setRole] = useState("AFFILIATE_MANAGER");
+  const [selectedRole, setSelectedRole] = useState(roleFromUrl);
 
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -80,14 +93,14 @@ function RegisterContent() {
       email,
       password,
       confirmPassword,
-      role,
+      role: selectedRole,
       ref: refId,
     });
   };
 
   return (
     <div className="h-screen w-full overflow-hidden bg-[#080808] text-zinc-100 flex flex-col lg:flex-row selection:bg-amber-400 selection:text-black">
-      {/* ── Left Side: Form Container (50%) ── */}
+      {/* ── Left Side: Form ── */}
       <div className="w-full lg:w-1/2 h-full flex flex-col justify-center items-center p-4 sm:p-8 lg:p-12 relative z-10">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
           <div className="w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px]" />
@@ -119,21 +132,37 @@ function RegisterContent() {
               Join the elite iGaming infrastructure.
             </p>
 
-            {/* Referral banner */}
+            {/* Referral / role banner */}
             <AnimatePresence>
               {refId && (
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="mb-4 px-3 py-2 rounded-xl border border-amber-400/20 bg-amber-400/8 text-[11px] text-amber-300 font-semibold"
+                  className="mb-4 px-3 py-2 rounded-xl border border-amber-400/20 bg-amber-400/8"
                 >
-                  🔗 Linked to partner referral programme.
+                  <p className="text-[11px] text-amber-300 font-semibold">
+                    🔗 Invited as{" "}
+                    <span className="text-amber-400">
+                      {ROLE_LABELS[roleFromUrl] ?? roleFromUrl}
+                    </span>
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
 
             <form className="space-y-3" onSubmit={handleSubmit} noValidate>
+              {/* Custom Role Selection Dropdown */}
+              {!refId && (
+                <div className="flex flex-col space-y-1.5 mb-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                    Account Type
+                  </label>
+                  <RoleSelect value={selectedRole} onChange={setSelectedRole} />
+                </div>
+              )}
+
+              {/* Username */}
               <Field
                 label="Username"
                 error={fieldErr("username")}
@@ -149,6 +178,7 @@ function RegisterContent() {
                 />
               </Field>
 
+              {/* Email */}
               <Field
                 label="Email"
                 error={fieldErr("email")}
@@ -159,11 +189,12 @@ function RegisterContent() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => touch("email")}
-                  placeholder="badcat@example.com"
+                  placeholder="you@example.com"
                   className={inputCls(!!fieldErr("email"))}
                 />
               </Field>
 
+              {/* Password */}
               <Field
                 label="Password"
                 error={fieldErr("password")}
@@ -193,6 +224,7 @@ function RegisterContent() {
                 />
               </Field>
 
+              {/* Confirm Password */}
               <Field
                 label="Confirm Password"
                 error={fieldErr("confirmPassword")}
@@ -222,46 +254,7 @@ function RegisterContent() {
                 />
               </Field>
 
-              <div className="flex flex-col space-y-2 pt-1">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                  Account Type
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    "AFFILIATE_MANAGER",
-                    "BASIC_SUB_AFFILIATE",
-                    "ADMIN_SUB_AFFILIATE",
-                  ].map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRole(r)}
-                      className={`py-1.5 text-[8.5px] font-bold uppercase tracking-wider rounded-lg border transition-all cursor-pointer ${
-                        role === r
-                          ? "bg-amber-400/10 border-amber-400 text-amber-400"
-                          : "bg-transparent border-white/10 text-zinc-500 hover:border-white/20 hover:text-white"
-                      }`}
-                    >
-                      {r.replace(/_/g, " ")}
-                    </button>
-                  ))}
-                </div>
-
-                <AnimatePresence>
-                  {role === "BASIC_SUB_AFFILIATE" && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="text-[10px] text-amber-400/80 mt-1"
-                    >
-                      You will earn 10% overrides from Affiliate Managers you
-                      invite.
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
-
+              {/* Server error */}
               <AnimatePresence>
                 {registerMutation.isError && (
                   <motion.div
@@ -309,6 +302,7 @@ function RegisterContent() {
         </motion.div>
       </div>
 
+      {/* ── Right Side: Image ── */}
       <div className="hidden lg:block lg:w-1/2 relative h-full">
         <Image
           alt="CatLoginRegister"
@@ -323,22 +317,85 @@ function RegisterContent() {
   );
 }
 
-// This is the new default export that wraps everything in Suspense
-export default function RegisterPage() {
+// ─── Custom Role Select Component ─────────────────────────────────────────────
+
+function RoleSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const rolesList = [
+    { id: ROLES.MANAGER, label: ROLE_LABELS[ROLES.MANAGER] },
+    { id: ROLES.BASIC, label: ROLE_LABELS[ROLES.BASIC] },
+    { id: ROLES.ADMIN, label: ROLE_LABELS[ROLES.ADMIN] },
+  ];
+
+  const selectedLabel =
+    rolesList.find((r) => r.id === value)?.label || "Select Role";
+
   return (
-    <Suspense
-      fallback={
-        <div className="h-screen w-full bg-[#080808] flex items-center justify-center text-amber-400 font-bold text-sm">
-          Loading...
-        </div>
-      }
-    >
-      <RegisterContent />
-    </Suspense>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`w-full bg-zinc-800/50 border rounded-xl py-2.5 px-4 text-sm text-white text-left focus:outline-none transition-all cursor-pointer relative ${
+          open
+            ? "border-amber-400/50 ring-1 ring-amber-400/50"
+            : "border-white/10 hover:border-white/20"
+        }`}
+      >
+        <span className="truncate block pr-6">{selectedLabel}</span>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-white/10 bg-zinc-900 shadow-2xl py-1.5 overflow-hidden flex flex-col"
+            >
+              {rolesList.map((role) => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(role.id);
+                    setOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    value === role.id
+                      ? "text-amber-400 bg-white/5 font-medium"
+                      : "text-zinc-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {role.label}
+                </button>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
-// ─── Shared helpers ────────────────────────────────────────────────────────────
+// ─── Input Styling & Field Wrapper ────────────────────────────────────────────
+
 const inputCls = (hasError: boolean) =>
   `w-full bg-zinc-800/50 border rounded-xl py-2.5 pl-11 pr-10 text-sm text-white focus:outline-none transition-all placeholder:text-zinc-600 ${
     hasError

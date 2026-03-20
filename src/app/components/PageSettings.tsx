@@ -1,33 +1,115 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { motion } from "motion/react";
 import {
   Shield,
-  User,
-  Pencil,
   Send,
-  Layers,
-  Smartphone,
   ExternalLink,
   CheckCircle2,
+  UploadCloud,
+  X,
 } from "lucide-react";
+import { AmberBtn, pageIn, SectionHeader, Spinner } from "./dashboard/UI";
 import {
+  useChangePassword,
   useMe,
   useUpdateProfile,
-  useChangePassword,
 } from "../hooks/useDashboard";
-import { AmberBtn, pageIn, SectionHeader } from "./dashboard/UI";
+import { authEndpoints } from "../lib/api";
+import { toast } from "sonner";
 
 export default function PageSettings() {
   const [subTab, setSubTab] = useState("Personal Preferences");
-  const { data: me } = useMe();
+  const { data: me, isLoading } = useMe();
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
 
   const [displayName, setDisplayName] = useState("");
+  const [telegramHandle, setTelegramHandle] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+
+  if (isLoading) return <Spinner />;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file.");
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarFile) return;
+    setIsUploadingAvatar(true);
+    try {
+      const { uploadUrl, publicUrl } = await authEndpoints.avatarUploadUrl({
+        filename: avatarFile.name,
+        contentType: avatarFile.type,
+      });
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": avatarFile.type },
+        body: avatarFile,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      updateProfile.mutate({ avatarUrl: publicUrl });
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } catch {
+      toast.error("Avatar upload failed.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleSaveProfile = () => {
+    const payload: any = {};
+    if (displayName.trim()) payload.displayName = displayName.trim();
+    if (telegramHandle.trim()) payload.telegramHandle = telegramHandle.trim();
+    if (!Object.keys(payload).length) return;
+    updateProfile.mutate(payload, {
+      onSuccess: () => {
+        setDisplayName("");
+        setTelegramHandle("");
+      },
+    });
+  };
+
+  const handleChangePassword = () => {
+    if (newPw !== confirmPw) {
+      toast.error("Passwords don't match.");
+      return;
+    }
+    if (newPw.length < 8) {
+      toast.error("Minimum 8 characters.");
+      return;
+    }
+    changePassword.mutate(
+      { currentPassword: currentPw, newPassword: newPw },
+      {
+        onSuccess: () => {
+          setCurrentPw("");
+          setNewPw("");
+          setConfirmPw("");
+        },
+      },
+    );
+  };
+
+  const currentAvatar = avatarPreview ?? (me as any)?.avatarUrl ?? null;
+  const initials = (me?.displayName ?? me?.email ?? "?")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <motion.div
@@ -38,10 +120,9 @@ export default function PageSettings() {
       exit="exit"
     >
       <SectionHeader title="Profile & Settings" />
-
-      <div className="grid md:grid-cols-[220px_1fr] gap-6">
+      <div className="grid md:grid-cols-[200px_1fr] gap-4 md:gap-6">
         {/* Sub-nav */}
-        <div className="space-y-1">
+        <div className="flex md:flex-col gap-1 overflow-x-auto pb-1 md:pb-0 -mx-1 px-1 md:mx-0 md:px-0">
           {["Personal Preferences", "Billing Details", "Security"].map(
             (item) => (
               <button
@@ -53,84 +134,148 @@ export default function PageSettings() {
               </button>
             ),
           )}
-          <div className="pt-3 border-t border-white/6 space-y-1">
-            {[
-              {
-                label: "Global Postbacks",
-                icon: <Send className="w-3.5 h-3.5" />,
-              },
-              { label: "API", icon: <Layers className="w-3.5 h-3.5" /> },
-              {
-                label: "Mobile App",
-                icon: <Smartphone className="w-3.5 h-3.5" />,
-              },
-            ].map(({ label, icon }) => (
-              <button
-                key={label}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold text-zinc-600 hover:text-white hover:bg-white/4 transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  {icon}
-                  {label}
-                </div>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            ))}
+          <div className="pt-3 border-t border-white/6 hidden md:block">
+            <button className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold text-zinc-600 hover:text-white hover:bg-white/4 transition-all">
+              <div className="flex items-center gap-2">
+                <Send className="w-3.5 h-3.5" /> Global Postbacks
+              </div>
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </div>
         </div>
 
         {/* Content panel */}
-        <div className="rounded-2xl border border-white/6 bg-zinc-900/60 p-7">
+        <div className="rounded-2xl border border-white/6 bg-zinc-900/60 p-4 sm:p-7">
+          {/* ── Personal Preferences ── */}
           {subTab === "Personal Preferences" && (
             <div>
               <h3 className="text-lg font-black text-white mb-6">
                 Personal Preferences
               </h3>
-              <div className="w-16 h-16 rounded-full bg-zinc-700 border border-white/10 flex items-center justify-center mb-7">
-                <User className="w-7 h-7 text-zinc-500" />
+
+              {/* Avatar upload */}
+              <div className="flex items-start gap-3 sm:gap-5 mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-white/5">
+                <div className="relative flex-shrink-0">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-20 h-20 rounded-2xl bg-zinc-800 border-2 border-dashed border-white/10 hover:border-amber-400/50 flex items-center justify-center overflow-hidden cursor-pointer transition-colors group relative"
+                  >
+                    {currentAvatar ? (
+                      <img
+                        src={currentAvatar}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl font-black text-zinc-400 group-hover:text-amber-400 transition-colors">
+                        {initials}
+                      </span>
+                    )}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
+                      <UploadCloud className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-white mb-1">
+                    Profile Photo
+                  </p>
+                  <p className="text-xs text-zinc-500 mb-3">
+                    Click avatar to upload. PNG, JPG or WebP up to 5MB.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <AmberBtn
+                      onClick={handleSaveAvatar}
+                      disabled={
+                        !avatarFile ||
+                        isUploadingAvatar ||
+                        updateProfile.isPending
+                      }
+                      small
+                    >
+                      {isUploadingAvatar ? "Uploading…" : "Save Photo"}
+                    </AmberBtn>
+                    {avatarFile && (
+                      <button
+                        onClick={() => {
+                          setAvatarFile(null);
+                          setAvatarPreview(null);
+                        }}
+                        className="text-xs text-zinc-500 hover:text-rose-400 transition-colors flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" /> Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-0">
+
+              {/* Read-only info */}
+              <div className="space-y-0 mb-6">
                 {[
-                  { label: "Display Name", value: me?.displayName ?? "—" },
+                  { label: "Username", value: me?.username ?? "—" },
                   { label: "Email", value: me?.email ?? "—" },
                   { label: "Role", value: me?.role ?? "—" },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
-                    className="flex items-center justify-between py-4 border-b border-white/5"
+                    className="flex items-center justify-between py-3.5 border-b border-white/5"
                   >
                     <span className="text-sm text-zinc-500 w-36">{label}</span>
-                    <span className="flex-1 text-sm text-zinc-300">
+                    <span className="flex-1 text-sm text-zinc-300 font-medium">
                       {value}
                     </span>
-                    <button className="text-zinc-600 hover:text-amber-400 transition-colors">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 pt-4">
-                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 block">
-                  Update Display Name
-                </label>
-                <div className="flex gap-3">
+
+              {/* Editable fields */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 block">
+                    Display Name
+                  </label>
                   <input
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder={me?.displayName ?? "Your display name"}
-                    className="flex-1 px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
                   />
-                  <AmberBtn
-                    onClick={() => updateProfile.mutate({ displayName })}
-                    disabled={updateProfile.isPending || !displayName}
-                  >
-                    {updateProfile.isPending ? "Saving…" : "Save"}
-                  </AmberBtn>
                 </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 block">
+                    Telegram Handle
+                  </label>
+                  <input
+                    value={telegramHandle}
+                    onChange={(e) => setTelegramHandle(e.target.value)}
+                    placeholder={
+                      (me as any)?.telegramHandle ?? "@your_telegram"
+                    }
+                    className="w-full px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
+                  />
+                </div>
+                <AmberBtn
+                  onClick={handleSaveProfile}
+                  disabled={
+                    updateProfile.isPending ||
+                    (!displayName.trim() && !telegramHandle.trim())
+                  }
+                >
+                  {updateProfile.isPending ? "Saving…" : "Save Changes"}
+                </AmberBtn>
               </div>
             </div>
           )}
 
+          {/* ── Billing Details ── */}
           {subTab === "Billing Details" && (
             <div>
               <h3 className="text-lg font-black text-white mb-6">
@@ -160,6 +305,7 @@ export default function PageSettings() {
             </div>
           )}
 
+          {/* ── Security ── */}
           {subTab === "Security" && (
             <div>
               <h3 className="text-lg font-black text-white mb-6">Security</h3>
@@ -175,43 +321,47 @@ export default function PageSettings() {
                     </p>
                   </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={currentPw}
-                    onChange={(e) => setCurrentPw(e.target.value)}
-                    className="mt-1 w-full px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={newPw}
-                    onChange={(e) => setNewPw(e.target.value)}
-                    className="mt-1 w-full px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
-                  />
-                </div>
+                {[
+                  {
+                    label: "Current Password",
+                    val: currentPw,
+                    set: setCurrentPw,
+                    ph: "••••••••",
+                  },
+                  {
+                    label: "New Password",
+                    val: newPw,
+                    set: setNewPw,
+                    ph: "Min. 8 characters",
+                  },
+                  {
+                    label: "Confirm New Password",
+                    val: confirmPw,
+                    set: setConfirmPw,
+                    ph: "Repeat new password",
+                  },
+                ].map(({ label, val, set, ph }) => (
+                  <div key={label}>
+                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                      {label}
+                    </label>
+                    <input
+                      type="password"
+                      placeholder={ph}
+                      value={val}
+                      onChange={(e) => set(e.target.value)}
+                      className="mt-1 w-full px-3 py-2.5 rounded-xl border border-white/8 bg-zinc-800/60 text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
+                    />
+                  </div>
+                ))}
                 <AmberBtn
-                  onClick={() =>
-                    changePassword.mutate(
-                      { currentPassword: currentPw, newPassword: newPw },
-                      {
-                        onSuccess: () => {
-                          setCurrentPw("");
-                          setNewPw("");
-                        },
-                      },
-                    )
+                  onClick={handleChangePassword}
+                  disabled={
+                    changePassword.isPending ||
+                    !currentPw ||
+                    !newPw ||
+                    !confirmPw
                   }
-                  disabled={changePassword.isPending || !currentPw || !newPw}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {changePassword.isPending ? "Updating…" : "Update Password"}

@@ -26,6 +26,7 @@ import {
   SectionHeader,
   FilterBar,
   fmt,
+  PaginationBar,
 } from "./dashboard/UI";
 import { useAppDispatch, useAppSelector } from "../store/hook";
 import {
@@ -49,6 +50,8 @@ export default function PagePayouts() {
   const dispatch = useAppDispatch();
   const { payoutStatusFilter } = useAppSelector((s) => s.ui);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const params =
     payoutStatusFilter !== "all" ? { status: payoutStatusFilter } : {};
@@ -90,7 +93,7 @@ export default function PagePayouts() {
       animate="visible"
       exit="exit"
     >
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
         <SectionHeader
           title="Payout Management"
           sub="Review and process withdrawal requests"
@@ -108,7 +111,7 @@ export default function PagePayouts() {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="grid md:grid-cols-3 gap-4 mb-7"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7"
       >
         <StatCard
           label="Pending Payouts"
@@ -161,100 +164,115 @@ export default function PagePayouts() {
           ) : payouts.length === 0 ? (
             <EmptyState colSpan={8} />
           ) : (
-            payouts.map((p: any) => (
-              <tr key={p.id} className="hover:bg-white/2 transition-colors">
-                <Td>
-                  <div>
-                    <div className="font-semibold text-white text-sm">
-                      {p.user?.profile?.displayName ?? p.user?.username}
+            payouts
+              .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+              .map((p: any) => (
+                <tr key={p.id} className="hover:bg-white/2 transition-colors">
+                  <Td>
+                    <div>
+                      <div className="font-semibold text-white text-sm">
+                        {p.user?.profile?.displayName ?? p.user?.username}
+                      </div>
+                      <div className="text-xs text-zinc-600">
+                        {p.user?.email}
+                      </div>
                     </div>
-                    <div className="text-xs text-zinc-600">{p.user?.email}</div>
-                  </div>
-                </Td>
-                <Td>
-                  {p.paymentMethod ? (
-                    <span className="font-mono text-xs text-zinc-500">
-                      {fmt.shortAddr(p.paymentMethod.address)}
+                  </Td>
+                  <Td>
+                    {p.paymentMethod ? (
+                      <span className="font-mono text-xs text-zinc-500">
+                        {fmt.shortAddr(p.paymentMethod.address)}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
+                  </Td>
+                  <Td>
+                    <span className="font-bold text-amber-400">
+                      {fmt.usd(p.amount)}
                     </span>
-                  ) : (
-                    <span className="text-zinc-600 text-xs">—</span>
-                  )}
-                </Td>
-                <Td>
-                  <span className="font-bold text-amber-400">
-                    {fmt.usd(p.amount)}
-                  </span>
-                </Td>
-                <Td>
-                  <Badge variant="blue">
-                    {p.paymentMethod?.network ?? "TRC20"}
-                  </Badge>
-                </Td>
-                <Td>
-                  <span className="text-xs">{fmt.date(p.createdAt)}</span>
-                </Td>
-                <Td>
-                  <Badge
-                    variant={
-                      p.status === "PAID"
-                        ? "green"
-                        : p.status === "APPROVED"
-                          ? "amber"
-                          : "yellow"
-                    }
-                  >
-                    {p.status}
-                  </Badge>
-                  {p.note?.startsWith("[TRASHED]") && (
-                    <p className="text-[10px] text-rose-400 mt-0.5">Trashed</p>
-                  )}
-                </Td>
-                <Td>
-                  {p.txHash ? (
-                    <span className="font-mono text-xs text-emerald-400">
-                      {fmt.shortAddr(p.txHash)}
-                    </span>
-                  ) : (
-                    <span className="text-zinc-600 text-xs">—</span>
-                  )}
-                </Td>
-                <Td>
-                  <div className="flex items-center gap-1.5">
-                    {p.status === "PENDING" && (
-                      <>
+                  </Td>
+                  <Td>
+                    <Badge variant="blue">
+                      {p.paymentMethod?.network ?? "TRC20"}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <span className="text-xs">{fmt.date(p.createdAt)}</span>
+                  </Td>
+                  <Td>
+                    <Badge
+                      variant={
+                        p.status === "PAID"
+                          ? "green"
+                          : p.status === "APPROVED"
+                            ? "amber"
+                            : "yellow"
+                      }
+                    >
+                      {p.status}
+                    </Badge>
+                    {p.note?.startsWith("[TRASHED]") && (
+                      <p className="text-[10px] text-rose-400 mt-0.5">
+                        Trashed
+                      </p>
+                    )}
+                  </Td>
+                  <Td>
+                    {p.txHash ? (
+                      <span className="font-mono text-xs text-emerald-400">
+                        {fmt.shortAddr(p.txHash)}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">—</span>
+                    )}
+                  </Td>
+                  <Td>
+                    <div className="flex items-center gap-1.5">
+                      {p.status === "PENDING" && (
+                        <>
+                          <button
+                            onClick={() =>
+                              setConfirm({ id: p.id, action: "approve" })
+                            }
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Approve
+                          </button>
+                          <button
+                            onClick={() =>
+                              setConfirm({ id: p.id, action: "trash" })
+                            }
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 border border-rose-500/25 text-rose-400 text-[11px] font-bold hover:bg-rose-500/25 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" /> Trash
+                          </button>
+                        </>
+                      )}
+                      {p.status === "APPROVED" && (
                         <button
                           onClick={() =>
-                            setConfirm({ id: p.id, action: "approve" })
+                            setConfirm({ id: p.id, action: "pay" })
                           }
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-500/15 border border-sky-500/25 text-sky-400 text-[11px] font-bold hover:bg-sky-500/25 transition-colors"
                         >
-                          <CheckCircle2 className="w-3 h-3" /> Approve
+                          <DollarSign className="w-3 h-3" /> Mark Paid
                         </button>
-                        <button
-                          onClick={() =>
-                            setConfirm({ id: p.id, action: "trash" })
-                          }
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 border border-rose-500/25 text-rose-400 text-[11px] font-bold hover:bg-rose-500/25 transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" /> Trash
-                        </button>
-                      </>
-                    )}
-                    {p.status === "APPROVED" && (
-                      <button
-                        onClick={() => setConfirm({ id: p.id, action: "pay" })}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-500/15 border border-sky-500/25 text-sky-400 text-[11px] font-bold hover:bg-sky-500/25 transition-colors"
-                      >
-                        <DollarSign className="w-3 h-3" /> Mark Paid
-                      </button>
-                    )}
-                  </div>
-                </Td>
-              </tr>
-            ))
+                      )}
+                    </div>
+                  </Td>
+                </tr>
+              ))
           )}
         </tbody>
       </TableWrapper>
+      <PaginationBar
+        currentPage={page}
+        totalPages={Math.ceil((payouts as any[]).length / PAGE_SIZE) || 1}
+        onPageChange={setPage}
+        totalItems={(payouts as any[]).length}
+        pageSize={PAGE_SIZE}
+      />
 
       {/* Confirm modal */}
       <AnimatePresence>

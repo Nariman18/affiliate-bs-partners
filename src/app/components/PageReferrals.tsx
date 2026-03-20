@@ -61,7 +61,7 @@ export default function PageReferrals() {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-7"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7"
       >
         <StatCard
           label="Total Referrals"
@@ -86,7 +86,7 @@ export default function PageReferrals() {
       </motion.div>
 
       {/* Invite link banner */}
-      <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-400/8 via-zinc-900/40 to-zinc-900/60 p-7 mb-7 flex items-center justify-between">
+      <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-400/8 via-zinc-900/40 to-zinc-900/60 p-5 sm:p-7 mb-7 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="max-w-lg">
           <h3 className="text-xl font-black text-white mb-2">
             Invite{" "}
@@ -142,9 +142,9 @@ export default function PageReferrals() {
           <tr>
             <Th>User</Th>
             <Th>Role</Th>
-            <Th>Joined</Th>
-            <Th>Their 30d Commission</Th>
-            <Th>My 30d Earnings</Th>
+            <Th className="hidden sm:table-cell">Joined</Th>
+            <Th className="hidden md:table-cell">Their 30d Commission</Th>
+            <Th className="hidden sm:table-cell">My 30d Earnings</Th>
             <Th>Total Earned</Th>
           </tr>
         </thead>

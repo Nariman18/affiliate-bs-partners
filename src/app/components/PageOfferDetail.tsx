@@ -18,7 +18,7 @@ import {
   useTeam,
   useOfferRequests,
   useUpdateOfferRequest,
-  useMyLinks, // <-- Added this hook to fetch the manager's links
+  useMyLinks,
 } from "../hooks/useDashboard";
 import { ROLES, type AppRole } from "../lib/api";
 import {
@@ -104,8 +104,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
   const updateReq = useUpdateOfferRequest();
 
   const { data: team = [], isLoading: teamLoading } = useTeam();
-
-  // Fetch links specifically for the manager
   const { data: myLinks = [] } = useMyLinks();
 
   const managers = team as any[];
@@ -145,8 +143,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
   };
 
   const geoData = COUNTRIES.find((c) => c.code === offer.targetCountry);
-
-  // Filter links to show in the table based on the user's role
   const displayLinks =
     role === ROLES.MANAGER
       ? myLinks.filter((link: any) => link.offerId === offer.id)
@@ -167,10 +163,9 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
         <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Back to Offers
       </button>
 
-      {/* Main Header Area */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div className="flex items-start gap-5">
-          {/* Logo */}
           <div className="w-20 h-20 rounded-2xl bg-zinc-800 border border-white/8 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xl">
             {offer.logoUrl ? (
               <img
@@ -184,41 +179,39 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               </span>
             )}
           </div>
-
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               {offer.isTop && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-500/70 text-white uppercase tracking-wider">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-500/70 text-white uppercase">
                   Top
                 </span>
               )}
               {offer.isExclusive && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-fuchsia-500/70 text-white uppercase tracking-wider">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-fuchsia-500/70 text-white uppercase">
                   Exclusive
                 </span>
               )}
               {offer.isNew && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-blue-500/70 text-white uppercase tracking-wider">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-blue-500/70 text-white uppercase">
                   New
                 </span>
               )}
             </div>
-
             <h2 className="text-2xl font-black text-white tracking-tight mb-2">
               {offer.name}
             </h2>
-
             <div className="flex items-center gap-3">
-              {offer.casinoUrl && (
-                <a
-                  href={offer.casinoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors bg-sky-400/10 px-2.5 py-1 rounded-lg"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Landing Page
-                </a>
-              )}
+              {(role === ROLES.ADMIN || role === ROLES.BASIC) &&
+                offer.casinoUrl && (
+                  <a
+                    href={offer.casinoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors bg-sky-400/10 px-2.5 py-1 rounded-lg"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Landing Page
+                  </a>
+                )}
               {offer.status && (
                 <Badge variant={offer.status === "ACTIVE" ? "green" : "yellow"}>
                   {offer.status}
@@ -228,7 +221,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
           </div>
         </div>
 
-        {/* Action Button Container */}
         <div>
           {role === ROLES.MANAGER && !offer.myRequestStatus && (
             <AmberBtn
@@ -239,27 +231,26 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
             </AmberBtn>
           )}
           {role === ROLES.MANAGER && offer.myRequestStatus === "PENDING" && (
-            <div className="px-4 py-2 rounded-xl border border-yellow-400/20 bg-yellow-400/10 text-yellow-400 text-sm font-semibold flex items-center gap-2">
+            <div className="px-4 py-2 rounded-xl border border-yellow-400/20 bg-yellow-400/10 text-yellow-400 text-sm font-semibold">
               Request Pending
             </div>
           )}
           {role === ROLES.MANAGER && offer.myRequestStatus === "APPROVED" && (
-            <div className="px-4 py-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-400 text-sm font-semibold flex items-center gap-2">
+            <div className="px-4 py-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-400 text-sm font-semibold">
               Access Approved
             </div>
           )}
         </div>
       </div>
 
-      {/* Grid Layout */}
-      <div className="grid md:grid-cols-[1fr_280px] gap-8">
+      {/* Main grid */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 md:gap-8">
         <div>
           <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
-          {/* ── TRACKING LINKS TAB ── */}
+          {/* ── TRACKING LINKS ── */}
           {tab === "Tracking Links" && (
             <div className="mt-4">
-              {/* ACTION BUTTONS: Only shown to Admin and Basic Subs */}
               {(role === ROLES.ADMIN || role === ROLES.BASIC) &&
                 offer.status === "ACTIVE" && (
                   <div className="flex gap-3 mb-6">
@@ -280,13 +271,11 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                     )}
                   </div>
                 )}
-
-              {/* TABLE: Shown to everyone, but data is filtered above */}
               <TableWrapper>
                 <thead>
                   <tr>
                     <Th>Name</Th>
-                    <Th>Link ID (SubID)</Th>
+                    <Th>Link ID</Th>
                     <Th>Tracking URL</Th>
                   </tr>
                 </thead>
@@ -296,7 +285,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                       colSpan={3}
                       label={
                         role === ROLES.MANAGER
-                          ? "You have not been assigned any tracking links for this offer yet."
+                          ? "No links assigned yet."
                           : "No tracking links generated yet."
                       }
                     />
@@ -339,8 +328,6 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   )}
                 </tbody>
               </TableWrapper>
-
-              {/* HOW TO TEST INSTRUCTIONS: Only Admin */}
               {role === ROLES.ADMIN && (
                 <div className="mt-4 p-4 rounded-xl border border-sky-500/20 bg-sky-500/5">
                   <h4 className="text-xs font-bold text-sky-400 mb-2 flex items-center gap-2">
@@ -349,14 +336,12 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   </h4>
                   <p className="text-xs text-zinc-400 leading-relaxed mb-3">
                     Copy the <strong className="text-amber-400">Link ID</strong>{" "}
-                    from the table above. Open your terminal and run the
-                    following curl command to simulate a successful Casino
-                    deposit:
+                    above and run:
                   </p>
                   <code className="block w-full p-3 rounded-lg bg-black text-[10px] font-mono text-zinc-300 overflow-x-auto whitespace-pre">
-                    {`curl -X POST http://localhost:5001/api/track/postback \\
--H "Content-Type: application/json" \\
--H "x-postback-secret: secret" \\
+                    {`curl -X POST http://localhost:5001/api/track/postback \
+-H "Content-Type: application/json" \
+-H "x-postback-secret: ${process.env.NEXT_PUBLIC_POSTBACK_SECRET || "your_casino_postback_secret"}" \
 -d '{
   "linkId": "PASTE_LINK_ID_HERE",
   "amount": 150.00,
@@ -368,7 +353,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
             </div>
           )}
 
-          {/* ── ACCESS REQUESTS TAB ── */}
+          {/* ── ACCESS REQUESTS ── */}
           {tab === "Access Requests" && (
             <div className="mt-4">
               <TableWrapper>
@@ -414,27 +399,44 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                             <Badge variant="yellow">PENDING</Badge>
                           )}
                           {req.status === "REJECTED" && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-wider">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase">
                               REJECTED
                             </span>
                           )}
                         </Td>
                         <Td>
-                          {req.status === "PENDING" ? (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() =>
-                                  updateReq.mutate({
-                                    offerId: offer.id,
-                                    reqId: req.id,
-                                    status: "APPROVED",
-                                  })
-                                }
-                                disabled={updateReq.isPending}
-                                className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors"
-                              >
-                                Approve
-                              </button>
+                          <div className="flex gap-2">
+                            {req.status === "PENDING" && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    updateReq.mutate({
+                                      offerId: offer.id,
+                                      reqId: req.id,
+                                      status: "APPROVED",
+                                    })
+                                  }
+                                  disabled={updateReq.isPending}
+                                  className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    updateReq.mutate({
+                                      offerId: offer.id,
+                                      reqId: req.id,
+                                      status: "REJECTED",
+                                    })
+                                  }
+                                  disabled={updateReq.isPending}
+                                  className="px-2 py-1 bg-rose-500/15 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/20 hover:bg-rose-500/25 transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {req.status === "APPROVED" && (
                               <button
                                 onClick={() =>
                                   updateReq.mutate({
@@ -446,12 +448,25 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                                 disabled={updateReq.isPending}
                                 className="px-2 py-1 bg-rose-500/15 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/20 hover:bg-rose-500/25 transition-colors"
                               >
-                                Reject
+                                Revoke Access
                               </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-zinc-600">—</span>
-                          )}
+                            )}
+                            {req.status === "REJECTED" && (
+                              <button
+                                onClick={() =>
+                                  updateReq.mutate({
+                                    offerId: offer.id,
+                                    reqId: req.id,
+                                    status: "APPROVED",
+                                  })
+                                }
+                                disabled={updateReq.isPending}
+                                className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors"
+                              >
+                                Restore
+                              </button>
+                            )}
+                          </div>
                         </Td>
                       </tr>
                     ))
@@ -461,7 +476,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
             </div>
           )}
 
-          {/* ── GOALS TAB ── */}
+          {/* ── GOALS ── */}
           {tab === "Goals" && (
             <div className="mt-4">
               <TableWrapper>
@@ -505,20 +520,16 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   </tr>
                 </tbody>
               </TableWrapper>
-              <div className="mt-8">
-                <h3 className="text-sm font-bold text-white mb-3">
-                  Offer Description
-                </h3>
-                <div className="rounded-2xl border border-white/6 bg-zinc-900/40 p-6">
+              {offer.description && (
+                <div className="mt-6 rounded-2xl border border-white/6 bg-zinc-900/40 p-6">
+                  <h3 className="text-sm font-bold text-white mb-3">
+                    Offer Description
+                  </h3>
                   <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                    {offer.description || (
-                      <span className="text-zinc-600 italic">
-                        No description provided for this offer.
-                      </span>
-                    )}
+                    {offer.description}
                   </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -532,56 +543,34 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4 pt-[52px]">
-          {/* Stats Box */}
+        <div className="space-y-4 md:pt-[52px]">
           <div className="rounded-2xl border border-white/6 bg-zinc-900/60 overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <span className="text-sm font-semibold text-zinc-400">
-                Category
-              </span>
-              <span className="text-sm font-bold text-white">
-                {offer.category ?? "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-white/[0.02] border-b border-white/5">
-              <span className="text-sm font-semibold text-zinc-400">EPC</span>
-              <span className="font-bold text-zinc-300">
-                {offer.epc ? fmt.usd(offer.epc) : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <span className="text-sm font-semibold text-zinc-400">CR</span>
-              <span className="font-bold text-zinc-300">
-                {offer.cr ? `${offer.cr}%` : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-white/[0.02] border-b border-white/5">
-              <span className="text-sm font-semibold text-zinc-400">AR</span>
-              <span className="font-bold text-zinc-300">
-                {offer.ar ? `${offer.ar}%` : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-4">
-              <span className="text-sm font-semibold text-zinc-400 leading-tight">
-                Click Session
-                <br />
-                Lifespan
-              </span>
-              <span className="font-bold text-zinc-300">14 days</span>
-            </div>
+            {[
+              { label: "Category", value: offer.category ?? "—" },
+              { label: "EPC", value: offer.epc ? fmt.usd(offer.epc) : "—" },
+              { label: "CR", value: offer.cr ? `${offer.cr}%` : "—" },
+              { label: "AR", value: offer.ar ? `${offer.ar}%` : "—" },
+              { label: "Session Lifespan", value: "14 days" },
+            ].map(({ label, value }, i) => (
+              <div
+                key={label}
+                className={`flex items-center justify-between p-4 border-b border-white/5 ${i % 2 === 1 ? "bg-white/[0.02]" : ""}`}
+              >
+                <span className="text-sm font-semibold text-zinc-400">
+                  {label}
+                </span>
+                <span className="font-bold text-zinc-300">{value}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Geo Targeting Box */}
           <div className="rounded-2xl border border-white/6 bg-zinc-900/60 p-5">
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Globe className="w-4 h-4" /> Targeting
             </h3>
-            <p className="text-xs text-zinc-400 mb-3 leading-relaxed">
-              Conversions are accepted with the following targeting:
-            </p>
             {geoData ? (
               <div className="flex items-center gap-3">
-                <span className="text-xl drop-shadow-sm">{geoData.flag}</span>
+                <span className="text-xl">{geoData.flag}</span>
                 <span className="text-sm font-semibold text-white">
                   {geoData.name}
                 </span>
@@ -594,23 +583,15 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
             )}
           </div>
 
-          {/* Traffic Sources Box */}
           <div className="rounded-2xl border border-white/6 bg-zinc-900/60 p-5">
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <MousePointer2 className="w-4 h-4" /> Traffic
+              <MousePointer2 className="w-4 h-4" /> Traffic Sources
             </h3>
-            <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-              By using prohibited traffic sources your account may be blocked.
-            </p>
             <div className="flex flex-wrap gap-2">
               {ALL_TRAFFIC_SOURCES.map((ts) => (
                 <span
                   key={ts}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
-                    offer.category === ts
-                      ? "bg-amber-400/10 border-amber-400/30 text-amber-400"
-                      : "bg-zinc-800/50 border-white/5 text-zinc-600"
-                  }`}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${offer.category === ts ? "bg-amber-400/10 border-amber-400/30 text-amber-400" : "bg-zinc-800/50 border-white/5 text-zinc-600"}`}
                 >
                   {ts}
                 </span>
@@ -628,8 +609,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               Distribute Tracking Link
             </h3>
             <p className="text-xs text-zinc-500 mb-5">
-              Select the Affiliate Manager who will use this link. Note: You
-              should approve their request first if they sent one!
+              Select the Affiliate Manager who will use this link.
             </p>
             {teamLoading ? (
               <div className="h-10 bg-zinc-800 rounded-xl animate-pulse mb-5" />
@@ -641,13 +621,13 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
               >
                 <option value="">— Select a manager —</option>
                 {managers.map((m: any) => {
-                  const isApproved = requests.some(
+                  const isApproved = (requests as any[]).some(
                     (r: any) => r.user.id === m.id && r.status === "APPROVED",
                   );
                   return (
                     <option key={m.id} value={m.id}>
-                      {m.displayName ?? m.username} ({m.email}){" "}
-                      {isApproved ? "✅ (Approved)" : ""}
+                      {m.displayName ?? m.username} ({m.email})
+                      {isApproved ? " ✅" : ""}
                     </option>
                   );
                 })}

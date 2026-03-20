@@ -416,6 +416,7 @@ export function useConversions(params?: {
 }
 export function useClicks(params?: {
   from?: string;
+  offerId?: string;
   to?: string;
   page?: number;
 }) {
@@ -466,8 +467,12 @@ export function useInvoices() {
 }
 
 // ─── Team ──────────────────────────────────────────────────────────────────────
-export function useTeam() {
-  return useQuery({ queryKey: QK.team, queryFn: teamEndpoints.list });
+export function useTeam(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: QK.team,
+    queryFn: teamEndpoints.list,
+    ...options,
+  });
 }
 export function useTeamMember(userId: string) {
   return useQuery({

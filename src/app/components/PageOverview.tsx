@@ -162,7 +162,7 @@ function OfferRow({ offer, onSelect }: { offer: any; onSelect: () => void }) {
   const cname = COUNTRY_NAMES[country] ?? country ?? "Global";
 
   return (
-    <div className="flex items-center gap-4 py-4 border-b border-white/5 last:border-0 hover:bg-white/1 transition-colors">
+    <div className="flex items-center gap-2 sm:gap-4 py-3 sm:py-4 border-b border-white/5 last:border-0 hover:bg-white/1 transition-colors">
       {/* Logo */}
       <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-zinc-800 border border-white/8 flex-shrink-0">
         {offer.logoUrl ? (
@@ -267,7 +267,7 @@ export default function PageOverview({ role, onSelectOffer }: Props) {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8"
       >
         {role === ROLES.ADMIN && (
           <>
@@ -360,7 +360,7 @@ export default function PageOverview({ role, onSelectOffer }: Props) {
       {/* ── Quick Stats ── */}
       <motion.div
         variants={fadeUp}
-        className="rounded-2xl border border-white/6 bg-zinc-900/50 p-6 mb-8"
+        className="rounded-2xl border border-white/6 bg-zinc-900/50 p-4 sm:p-6 mb-6 sm:mb-8"
       >
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-black text-white">Quick Stats</h3>
@@ -385,7 +385,7 @@ export default function PageOverview({ role, onSelectOffer }: Props) {
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"
         >
           <QuickCard
             label="Gross Clicks"
@@ -421,7 +421,7 @@ export default function PageOverview({ role, onSelectOffer }: Props) {
       {/* ── Offers to Promote ── */}
       <motion.div
         variants={fadeUp}
-        className="rounded-2xl border border-white/6 bg-zinc-900/50 p-6"
+        className="rounded-2xl border border-white/6 bg-zinc-900/50 p-4 sm:p-6"
       >
         <div className="flex items-start justify-between mb-1">
           <h3 className="text-sm font-black text-white">Offers to Promote</h3>

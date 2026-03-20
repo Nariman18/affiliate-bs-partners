@@ -12,8 +12,8 @@ export type Page =
   | "settings"
   | "affiliates"
   | "payouts"
-  | "commissions"
-  | "team";
+  | "team"
+  | "member-detail";
 
 interface DateRange {
   from: string;
@@ -23,6 +23,7 @@ interface DateRange {
 interface UIState {
   activePage: Page;
   selectedOfferId: string | null;
+  selectedMemberId: string | null;
   // Report filters
   reportSubTab: string;
   reportDateRange: DateRange;
@@ -43,6 +44,7 @@ const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 const initialState: UIState = {
   activePage: "overview",
   selectedOfferId: null,
+  selectedMemberId: null,
   reportSubTab: "General",
   reportDateRange: { from: thirtyDaysAgo, to: today },
   txTab: "Conversions",
@@ -58,10 +60,15 @@ const uiSlice = createSlice({
     navigateTo: (state, action: PayloadAction<Page>) => {
       state.activePage = action.payload;
       if (action.payload !== "offer-detail") state.selectedOfferId = null;
+      if (action.payload !== "member-detail") state.selectedMemberId = null;
     },
     openOfferDetail: (state, action: PayloadAction<string>) => {
       state.selectedOfferId = action.payload;
       state.activePage = "offer-detail";
+    },
+    openMemberDetail: (state, action: PayloadAction<string>) => {
+      state.selectedMemberId = action.payload;
+      state.activePage = "member-detail";
     },
     setReportSubTab: (state, action: PayloadAction<string>) => {
       state.reportSubTab = action.payload;
@@ -87,6 +94,7 @@ const uiSlice = createSlice({
 export const {
   navigateTo,
   openOfferDetail,
+  openMemberDetail,
   setReportSubTab,
   setReportDateRange,
   setTxTab,

@@ -298,7 +298,7 @@ export default function PageReports({ role: _role }: Props) {
       animate="visible"
       exit="exit"
     >
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
         <SectionHeader title="Reports" />
         <OutlineBtn onClick={() => general.refetch()}>
           <RefreshCw className="w-3 h-3" /> Refresh

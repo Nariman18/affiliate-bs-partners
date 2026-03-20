@@ -53,9 +53,18 @@ export const authEndpoints = {
   updateProfile: async (payload: {
     displayName?: string;
     telegramHandle?: string;
+    avatarUrl?: string;
   }) => {
     const { data } = await api.patch("/auth/me", payload);
     return data;
+  },
+
+  avatarUploadUrl: async (payload: {
+    filename: string;
+    contentType: string;
+  }) => {
+    const { data } = await api.post("/auth/avatar-upload-url", payload);
+    return data as { uploadUrl: string; publicUrl: string };
   },
 
   changePassword: async (payload: {
@@ -106,11 +115,6 @@ export const offersEndpoints = {
     return data;
   },
 
-  toggleStar: async (id: string) => {
-    const { data } = await api.post(`/offers/${id}/star`);
-    return data;
-  },
-
   getUploadUrl: async (payload: { filename: string; contentType: string }) => {
     const { data } = await api.post("/offers/upload-url", payload);
     return data as { uploadUrl: string; publicUrl: string; fileKey: string };
@@ -123,10 +127,11 @@ export const offersEndpoints = {
     casinoUrl: string;
     description?: string;
     targetCountry?: string;
+    commissionPct?: number;
+    regPayout?: number;
     logoUrl?: string;
     geoTargets?: string[];
     minDeposit?: number;
-    regPayout?: number;
     isVisible?: boolean;
     isNew?: boolean;
     isTop?: boolean;
@@ -144,6 +149,11 @@ export const offersEndpoints = {
 
   delete: async (id: string) => {
     const { data } = await api.delete(`/offers/${id}`);
+    return data;
+  },
+
+  toggleStar: async (id: string) => {
+    const { data } = await api.post(`/offers/${id}/star`);
     return data;
   },
 
@@ -406,6 +416,7 @@ export const transactionsEndpoints = {
     from?: string;
     to?: string;
     invalid?: boolean;
+    offerId?: string;
     page?: number;
   }) => {
     const { data } = await api.get("/transactions/clicks", { params });
