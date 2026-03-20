@@ -18,11 +18,11 @@ function Header() {
         className="fixed top-0 w-full z-50"
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 mt-3 sm:mt-6">
-          <div className="relative flex items-center justify-between h-12 sm:h-14 px-4 sm:px-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/8">
+          <div className="relative flex items-center justify-between h-14 sm:h-17 px-4 sm:px-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/8">
             {/* Logo */}
             <Link
               href="/"
-              className="relative w-24 h-14 sm:w-35 sm:h-20 block flex-shrink-0"
+              className="relative w-12 h-12 sm:w-16 sm:h-16 block flex-shrink-0"
             >
               <Image
                 alt="CatLogo"
