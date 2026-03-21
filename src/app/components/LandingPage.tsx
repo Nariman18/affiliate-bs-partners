@@ -275,7 +275,7 @@ export default function LandingPage() {
       <section id="partners" className="relative z-10 bg-[#080808]">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
         <div className="py-8">
-          <p className="text-center text-[13px] font-bold uppercase tracking-[0.25em] text-zinc-600 mb-6">
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600 mb-6">
             Trusted Networks
           </p>
           <CurvedLoop
