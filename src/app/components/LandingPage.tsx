@@ -191,7 +191,9 @@ export default function LandingPage() {
             autoPlay
             muted
             loop
-            className="w-full h-full object-cover"
+            playsInline
+            disablePictureInPicture
+            className="w-full h-full object-cover pointer-events-none"
           />
         </motion.div>
 
