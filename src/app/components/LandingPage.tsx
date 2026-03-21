@@ -273,11 +273,11 @@ export default function LandingPage() {
       <section id="partners" className="relative z-10 bg-[#080808]">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
         <div className="py-8">
-          <p className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600 mb-6">
+          <p className="text-center text-[13px] font-bold uppercase tracking-[0.25em] text-zinc-600 mb-6">
             Trusted Networks
           </p>
           <CurvedLoop
-            marqueeText="Mostbet  ✦  Twin  ✦  Slot  ✦  Amonebet  ✦  N1Partners  ✦  NVCasino  ✦  Parimatch  ✦  Fairpari Partners  ✦  Pin Up  ✦"
+            marqueeText="Mostbet  ✦  Twin  ✦  SlotV  ✦  AmonBet  ✦  N1 Partners  ✦  NV Casino  ✦  Parimatch  ✦  Fairpari Partners  ✦  Pin-Up Partners  ✦"
             speed={0.5}
             curveAmount={0}
             direction="right"
@@ -431,7 +431,7 @@ export default function LandingPage() {
       <section className="relative z-10 bg-[#080808] py-0 sm:py-6">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent mb-6" />
         <CurvedLoop
-          marqueeText="Real-Time Analytics  ✦  Crypto Payouts  ✦  Fraud Shield  ✦  Live Feed  ✦  API-First  ✦  Edge Network  ✦  SSO Auth  ✦  24/7 Support  ✦"
+          marqueeText="🇵🇹 Portugal  ✦  🇧🇷 Brazil  ✦  🇵🇱 Poland  ✦  🇩🇪 Germany  ✦  🇨🇦 Canada  ✦  🇦🇺 Australia  ✦  🇮🇳 India  ✦  🇹🇷 Turkey  ✦  🇪🇸 Spain  ✦  🇮🇹 Italy  ✦  🇫🇷 France  ✦  🇿🇦 South Africa  ✦  🇬🇧 UK  ✦"
           speed={0.35}
           curveAmount={0}
           direction="left"
