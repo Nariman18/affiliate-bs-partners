@@ -21,13 +21,11 @@ import CountUp from "@/components/CountUp";
 import { toast } from "sonner";
 
 // ─── Easing ───────────────────────────────────────────────────────────────────
-// Must be typed `as const` so TS infers [number, number, number, number]
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 40 },
-  // Framer Motion calls the function with the `custom` prop value when set.
   visible: (i: number = 0) => ({
     opacity: 1,
     y: 0,
@@ -59,8 +57,6 @@ const cardReveal: Variants = {
   },
 };
 
-// ─── Shared viewport config ───────────────────────────────────────────────────
-// once: false  →  animations re-fire every time the element enters the viewport
 const VP = { once: false, margin: "-100px" } as const;
 const VP_LOOSE = { once: false, margin: "-80px" } as const;
 
@@ -128,12 +124,9 @@ function BentoCard({
       whileHover={{ y: -4, transition: { duration: 0.3, ease: "easeOut" } }}
       className={`group relative rounded-3xl border border-white/8 bg-zinc-900/60 backdrop-blur-xl p-7 overflow-hidden flex flex-col justify-between gap-6 ${span ?? ""}`}
     >
-      {/* glow blob */}
       <div
         className={`absolute -top-12 -right-12 w-48 h-48 rounded-full opacity-0 group-hover:opacity-30 blur-3xl transition-opacity duration-700 ${accent ?? "bg-amber-400"}`}
       />
-
-      {/* icon + badge */}
       <div className="flex items-start justify-between">
         <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-zinc-800 border border-white/10 text-amber-400 group-hover:bg-amber-400/15 transition-colors duration-300">
           {icon}
@@ -144,16 +137,12 @@ function BentoCard({
           </span>
         )}
       </div>
-
-      {/* text */}
       <div>
         <h3 className="text-lg font-bold text-white mb-2 tracking-tight">
           {title}
         </h3>
         <p className="text-sm text-zinc-500 leading-relaxed">{description}</p>
       </div>
-
-      {/* bottom glow line */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
     </motion.div>
   );
@@ -175,28 +164,21 @@ export default function LandingPage() {
     const video = videoRef.current;
     if (!video) return;
 
-    // 1. Set required attributes for iOS
     video.muted = true;
     video.setAttribute("muted", "true");
     video.setAttribute("playsinline", "true");
     (video as any).defaultMuted = true;
 
-    // 2. Function to attempt playback
     const attemptPlay = () => {
       video.play().catch((error) => {
-        // Silently catch the error so we don't spam the console or UI
         console.warn("Autoplay prevented:", error);
       });
     };
 
-    // 3. Try immediately (Works if Low Power Mode is OFF)
     attemptPlay();
 
-    // 4. The Bypass: Try again the absolute millisecond the user touches the screen
-    // iOS will allow playback if it's tied to a user interaction event.
     const playOnInteract = () => {
       attemptPlay();
-      // Remove listeners once we trigger it so we don't keep firing it
       document.removeEventListener("touchstart", playOnInteract);
       document.removeEventListener("click", playOnInteract);
       document.removeEventListener("scroll", playOnInteract);
@@ -206,7 +188,6 @@ export default function LandingPage() {
     document.addEventListener("click", playOnInteract, { once: true });
     document.addEventListener("scroll", playOnInteract, { once: true });
 
-    // Cleanup
     return () => {
       document.removeEventListener("touchstart", playOnInteract);
       document.removeEventListener("click", playOnInteract);
@@ -216,9 +197,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-amber-400 selection:text-black antialiased">
-      {/* Noise overlay */}
-
-      {/* Nav */}
       <Header />
 
       {/* ── Hero ── */}
@@ -322,7 +300,7 @@ export default function LandingPage() {
       <section id="partners" className="relative z-10 bg-[#080808]">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
         <div className="py-8">
-          <p className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600 mb-6">
+          <p className="text-center text-[10px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-zinc-600 mb-6">
             Trusted Networks
           </p>
           <CurvedLoop
@@ -478,9 +456,13 @@ export default function LandingPage() {
 
       {/* ── CurvedLoop divider ── */}
       <section className="relative z-10 bg-[#080808] py-0 sm:py-6">
+        <p className="text-center text-[10px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-amber-500/60 mb-6">
+          Available Locations
+        </p>
         <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent mb-6" />
+
         <CurvedLoop
-          marqueeText="🇵🇹 Portugal  ✦  🇧🇷 Brazil  ✦  🇵🇱 Poland  ✦  🇩🇪 Germany  ✦  🇨🇦 Canada  ✦  🇦🇺 Australia  ✦  🇮🇳 India  ✦  🇹🇷 Turkey  ✦  🇪🇸 Spain  ✦  🇮🇹 Italy  ✦  🇫🇷 France  ✦  🇿🇦 South Africa  ✦  🇬🇧 UK  ✦"
+          marqueeText="Portugal  ✦  Brazil  ✦  Poland  ✦  Germany  ✦  Canada  ✦  Australia  ✦  India  ✦  Turkey  ✦  Spain  ✦  Italy  ✦  France  ✦  South Africa  ✦  UK  ✦"
           speed={0.35}
           curveAmount={0}
           direction="left"
