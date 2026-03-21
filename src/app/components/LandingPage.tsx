@@ -171,17 +171,47 @@ export default function LandingPage() {
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
-  // Force video playback specifically for stubborn iOS mobile browsers
   useEffect(() => {
-    if (videoRef.current) {
-      // Explicitly set DOM-level mute states bypassing React's synthetic properties
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
+    const video = videoRef.current;
+    if (!video) return;
 
-      videoRef.current.play().catch((error) => {
-        toast.error("Video auto-play was prevented by browser:", error);
+    // 1. Set required attributes for iOS
+    video.muted = true;
+    video.setAttribute("muted", "true");
+    video.setAttribute("playsinline", "true");
+    (video as any).defaultMuted = true;
+
+    // 2. Function to attempt playback
+    const attemptPlay = () => {
+      video.play().catch((error) => {
+        // Silently catch the error so we don't spam the console or UI
+        console.warn("Autoplay prevented:", error);
       });
-    }
+    };
+
+    // 3. Try immediately (Works if Low Power Mode is OFF)
+    attemptPlay();
+
+    // 4. The Bypass: Try again the absolute millisecond the user touches the screen
+    // iOS will allow playback if it's tied to a user interaction event.
+    const playOnInteract = () => {
+      attemptPlay();
+      // Remove listeners once we trigger it so we don't keep firing it
+      document.removeEventListener("touchstart", playOnInteract);
+      document.removeEventListener("click", playOnInteract);
+      document.removeEventListener("scroll", playOnInteract);
+    };
+
+    document.addEventListener("touchstart", playOnInteract, { once: true });
+    document.addEventListener("click", playOnInteract, { once: true });
+    document.addEventListener("scroll", playOnInteract, { once: true });
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("touchstart", playOnInteract);
+      document.removeEventListener("click", playOnInteract);
+      document.removeEventListener("scroll", playOnInteract);
+    };
   }, []);
 
   return (
