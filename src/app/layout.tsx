@@ -6,6 +6,9 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "CasAffiliate | iGaming Affiliate Management",
   description: "Minimalist affiliate management system for iGaming partners.",
+  icons: {
+    icon: "/LogoCat.png",
+  },
 };
 
 export default function RootLayout({
