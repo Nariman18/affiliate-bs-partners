@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   Users,
   TrendingUp,
@@ -11,10 +11,8 @@ import {
   CheckCircle2,
   Search,
   X,
-  Filter,
 } from "lucide-react";
 import {
-  Badge,
   StatCard,
   TableWrapper,
   Th,
@@ -41,12 +39,12 @@ interface Props {
 function RoleTag({ role }: { role: string }) {
   if (role === ROLES.BASIC)
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-sky-500/15 text-sky-400 border border-sky-500/20">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-sky-500/15 text-sky-400 border border-sky-500/20 whitespace-nowrap">
         Sub-Affiliate
       </span>
     );
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-zinc-700/60 text-zinc-300">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-zinc-700/60 text-zinc-300 whitespace-nowrap">
       Manager
     </span>
   );
@@ -63,7 +61,6 @@ function AdminTeamView() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
 
-  // FIX: Reset page safely without causing render loop
   useEffect(() => {
     setPage(1);
   }, [search, roleFilter]);
@@ -131,13 +128,13 @@ function AdminTeamView() {
       {/* Filter row */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
         {/* Search */}
-        <div className="relative">
+        <div className="relative flex-grow sm:flex-grow-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by username or email…"
-            className="pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40 w-40 sm:w-60"
+            placeholder="Search username or email…"
+            className="w-full sm:w-60 pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40"
           />
           {search && (
             <button
@@ -150,12 +147,12 @@ function AdminTeamView() {
         </div>
 
         {/* Role filter */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto">
           {(["all", "basic", "manager"] as const).map((r) => (
             <button
               key={r}
               onClick={() => setRoleFilter(r)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 roleFilter === r
                   ? "bg-amber-400 text-black"
                   : "border border-white/8 text-zinc-500 hover:text-white"
@@ -170,7 +167,7 @@ function AdminTeamView() {
           ))}
         </div>
 
-        <span className="ml-auto text-xs text-zinc-600">
+        <span className="ml-auto text-xs text-zinc-600 hidden sm:block pl-2">
           {filtered.length} members
         </span>
       </div>
@@ -178,14 +175,14 @@ function AdminTeamView() {
       <TableWrapper>
         <thead>
           <tr>
-            <Th>Member</Th>
-            <Th className="hidden sm:table-cell">Role</Th>
-            <Th className="hidden lg:table-cell">Managers</Th>
-            <Th className="hidden md:table-cell">Clicks</Th>
-            <Th className="hidden lg:table-cell">Deposits</Th>
-            <Th>Revenue</Th>
-            <Th className="hidden md:table-cell">Balances</Th>
-            <Th className="hidden lg:table-cell">Joined</Th>
+            <Th className="whitespace-nowrap">Member</Th>
+            <Th className="whitespace-nowrap">Role</Th>
+            <Th className="whitespace-nowrap">Managers</Th>
+            <Th className="whitespace-nowrap">Clicks</Th>
+            <Th className="whitespace-nowrap">Deposits</Th>
+            <Th className="whitespace-nowrap">Revenue</Th>
+            <Th className="whitespace-nowrap">Balances</Th>
+            <Th className="whitespace-nowrap">Joined</Th>
             <Th> </Th>
           </tr>
         </thead>
@@ -207,8 +204,7 @@ function AdminTeamView() {
                 onClick={() => dispatch(openMemberDetail(member.id))}
               >
                 <Td>
-                  {/* FIX: Avatar added here! */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-[150px]">
                     <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden border border-white/10 flex-shrink-0">
                       {member.avatarUrl ? (
                         <img
@@ -225,16 +221,16 @@ function AdminTeamView() {
                       )}
                     </div>
                     <div>
-                      <div className="font-semibold text-white text-sm group-hover:text-amber-300 transition-colors">
+                      <div className="font-semibold text-white text-sm group-hover:text-amber-300 transition-colors whitespace-nowrap">
                         {member.displayName ?? member.username}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-zinc-600 whitespace-nowrap">
                         {member.email}
                       </div>
                     </div>
                   </div>
                 </Td>
-                <Td className="hidden sm:table-cell">
+                <Td>
                   <RoleTag role={member.role} />
                 </Td>
                 <Td>
@@ -242,19 +238,23 @@ function AdminTeamView() {
                     {member.managerCount ?? 0}
                   </span>
                 </Td>
-                <Td>{(member.clicks ?? 0).toLocaleString()}</Td>
+                <Td>
+                  <span className="text-zinc-300">
+                    {(member.clicks ?? 0).toLocaleString()}
+                  </span>
+                </Td>
                 <Td>
                   <span className="text-zinc-300">
                     {member.depositCount ?? 0}
                   </span>
                 </Td>
                 <Td>
-                  <span className="font-semibold text-emerald-400">
+                  <span className="font-semibold text-emerald-400 whitespace-nowrap">
                     {fmt.usd(member.depositVolume ?? 0)}
                   </span>
                 </Td>
-                <Td className="hidden md:table-cell">
-                  <div className="flex flex-col gap-0.5">
+                <Td>
+                  <div className="flex flex-col gap-0.5 whitespace-nowrap">
                     <span className="text-[10px] text-zinc-600">
                       P:{" "}
                       <span className="text-zinc-400">
@@ -269,8 +269,10 @@ function AdminTeamView() {
                     </span>
                   </div>
                 </Td>
-                <Td className="hidden lg:table-cell">
-                  <span className="text-xs">{fmt.date(member.joinedAt)}</span>
+                <Td>
+                  <span className="text-xs whitespace-nowrap">
+                    {fmt.date(member.joinedAt)}
+                  </span>
                 </Td>
                 <Td>
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-amber-400 transition-colors" />
@@ -309,7 +311,6 @@ function BasicTeamView() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // FIX: Reset page safely without causing render loop
   useEffect(() => {
     setPage(1);
   }, [search]);
@@ -369,13 +370,13 @@ function BasicTeamView() {
 
       {/* Filter row */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
-        <div className="relative">
+        <div className="relative flex-grow sm:flex-grow-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by username or email…"
-            className="pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40 w-60"
+            placeholder="Search username or email…"
+            className="w-full sm:w-60 pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40"
           />
           {search && (
             <button
@@ -390,7 +391,7 @@ function BasicTeamView() {
         {referralLink && (
           <button
             onClick={handleCopyLink}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-amber-400/30 bg-amber-400/10 text-amber-400 text-xs font-bold hover:bg-amber-400/20 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-amber-400/30 bg-amber-400/10 text-amber-400 text-xs font-bold hover:bg-amber-400/20 transition-colors whitespace-nowrap"
           >
             {copied ? (
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -401,7 +402,7 @@ function BasicTeamView() {
           </button>
         )}
 
-        <span className="ml-auto text-xs text-zinc-600">
+        <span className="ml-auto text-xs text-zinc-600 hidden sm:block pl-2">
           {filtered.length} managers
         </span>
       </div>
@@ -409,13 +410,13 @@ function BasicTeamView() {
       <TableWrapper>
         <thead>
           <tr>
-            <Th>Member</Th>
-            <Th className="hidden md:table-cell">Clicks</Th>
-            <Th className="hidden lg:table-cell">Deposits</Th>
-            <Th>Revenue</Th>
-            <Th className="hidden md:table-cell">Balances</Th>
-            <Th className="hidden lg:table-cell">Default Wallet</Th>
-            <Th className="hidden lg:table-cell">Joined</Th>
+            <Th className="whitespace-nowrap">Member</Th>
+            <Th className="whitespace-nowrap">Clicks</Th>
+            <Th className="whitespace-nowrap">Deposits</Th>
+            <Th className="whitespace-nowrap">Revenue</Th>
+            <Th className="whitespace-nowrap">Balances</Th>
+            <Th className="whitespace-nowrap">Default Wallet</Th>
+            <Th className="whitespace-nowrap">Joined</Th>
             <Th> </Th>
           </tr>
         </thead>
@@ -439,8 +440,7 @@ function BasicTeamView() {
                 onClick={() => dispatch(openMemberDetail(member.id))}
               >
                 <Td>
-                  {/* FIX: Avatar added here! */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-[150px]">
                     <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden border border-white/10 flex-shrink-0">
                       {member.avatarUrl ? (
                         <img
@@ -457,28 +457,32 @@ function BasicTeamView() {
                       )}
                     </div>
                     <div>
-                      <div className="font-semibold text-white text-sm group-hover:text-amber-300 transition-colors">
+                      <div className="font-semibold text-white text-sm group-hover:text-amber-300 transition-colors whitespace-nowrap">
                         {member.displayName ?? member.username}
                       </div>
-                      <div className="text-xs text-zinc-600">
+                      <div className="text-xs text-zinc-600 whitespace-nowrap">
                         {member.email}
                       </div>
                     </div>
                   </div>
                 </Td>
-                <Td>{(member.clicks ?? 0).toLocaleString()}</Td>
+                <Td>
+                  <span className="text-zinc-300">
+                    {(member.clicks ?? 0).toLocaleString()}
+                  </span>
+                </Td>
                 <Td>
                   <span className="text-zinc-300">
                     {member.depositCount ?? 0}
                   </span>
                 </Td>
                 <Td>
-                  <span className="font-semibold text-emerald-400">
+                  <span className="font-semibold text-emerald-400 whitespace-nowrap">
                     {fmt.usd(member.depositVolume ?? 0)}
                   </span>
                 </Td>
-                <Td className="hidden md:table-cell">
-                  <div className="flex flex-col gap-0.5">
+                <Td>
+                  <div className="flex flex-col gap-0.5 whitespace-nowrap">
                     <span className="text-[10px] text-zinc-600">
                       P:{" "}
                       <span className="text-zinc-400">
@@ -495,15 +499,19 @@ function BasicTeamView() {
                 </Td>
                 <Td>
                   {member.defaultWallet ? (
-                    <span className="font-mono text-xs text-zinc-500">
+                    <span className="font-mono text-xs text-zinc-500 whitespace-nowrap">
                       {fmt.shortAddr(member.defaultWallet.address)}
                     </span>
                   ) : (
-                    <span className="text-zinc-600 text-xs">No wallet</span>
+                    <span className="text-zinc-600 text-xs whitespace-nowrap">
+                      No wallet
+                    </span>
                   )}
                 </Td>
                 <Td>
-                  <span className="text-xs">{fmt.date(member.joinedAt)}</span>
+                  <span className="text-xs whitespace-nowrap">
+                    {fmt.date(member.joinedAt)}
+                  </span>
                 </Td>
                 <Td>
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-amber-400 transition-colors" />

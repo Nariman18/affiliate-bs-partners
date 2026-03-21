@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Clock,
@@ -9,6 +9,8 @@ import {
   XCircle,
   DollarSign,
   Trash2,
+  Search,
+  ArrowDownRight,
 } from "lucide-react";
 import {
   Badge,
@@ -35,9 +37,9 @@ import {
   useApprovePayout,
   usePayPayout,
   useTrashPayout,
-  useBulkApproveCommissions,
 } from "../hooks/useDashboard";
 import { setPayoutStatusFilter } from "../store/slices/uiSlice";
+import { ROLES } from "../lib/api";
 
 type ConfirmState = {
   id: string;
@@ -51,16 +53,17 @@ export default function PagePayouts() {
   const { payoutStatusFilter } = useAppSelector((s) => s.ui);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const PAGE_SIZE = 10;
 
   const params =
     payoutStatusFilter !== "all" ? { status: payoutStatusFilter } : {};
   const { data: payouts = [], isLoading } = usePayouts(params);
   const { data: stats } = usePayoutStats();
+
   const approvePayout = useApprovePayout();
   const payPayout = usePayPayout();
   const trashPayout = useTrashPayout();
-  const bulkApproveComms = useBulkApproveCommissions();
 
   const handleAction = () => {
     if (!confirm) return;
@@ -85,6 +88,36 @@ export default function PagePayouts() {
   const isPending =
     approvePayout.isPending || payPayout.isPending || trashPayout.isPending;
 
+  // Filter payouts based on search input mapping through the nested commissions
+  const filteredPayouts = useMemo(() => {
+    let list = payouts as any[];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((p) => {
+        // Search by TxHash
+        if (p.txHash?.toLowerCase().includes(q)) return true;
+        // Search through recipients
+        return p.commissions?.some((c: any) => {
+          const r = c.recipient;
+          if (!r) return false;
+          return (
+            r.username?.toLowerCase().includes(q) ||
+            r.email?.toLowerCase().includes(q) ||
+            r.profile?.displayName?.toLowerCase().includes(q) ||
+            c.wallet?.address?.toLowerCase().includes(q)
+          );
+        });
+      });
+    }
+    return list;
+  }, [payouts, search]);
+
+  const totalPages = Math.ceil(filteredPayouts.length / PAGE_SIZE) || 1;
+  const paginatedPayouts = filteredPayouts.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
+
   return (
     <motion.div
       key="payouts"
@@ -98,13 +131,6 @@ export default function PagePayouts() {
           title="Payout Management"
           sub="Review and process withdrawal requests"
         />
-        <OutlineBtn
-          onClick={() => bulkApproveComms.mutate({ ids: [] })}
-          disabled={bulkApproveComms.isPending}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          Approve All Commissions
-        </OutlineBtn>
       </div>
 
       <motion.div
@@ -134,23 +160,47 @@ export default function PagePayouts() {
       </motion.div>
 
       <FilterBar>
-        {["all", "PENDING", "APPROVED", "PAID"].map((s) => (
-          <button
-            key={s}
-            onClick={() => dispatch(setPayoutStatusFilter(s))}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${payoutStatusFilter === s ? "bg-amber-400 text-black" : "border border-white/8 text-zinc-500 hover:text-white"}`}
-          >
-            {s === "all" ? "All" : s}
-          </button>
-        ))}
+        {/* Status Filters */}
+        <div className="flex items-center gap-2">
+          {["all", "PENDING", "APPROVED", "PAID"].map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                dispatch(setPayoutStatusFilter(s));
+                setPage(1); // Reset page on filter
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                payoutStatusFilter === s
+                  ? "bg-amber-400 text-black"
+                  : "border border-white/8 text-zinc-500 hover:text-white"
+              }`}
+            >
+              {s === "all" ? "All" : s}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input */}
+        <div className="relative ml-auto">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1); // Reset page on search
+            }}
+            placeholder="Search affiliates, emails, wallets..."
+            className="pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40 w-64"
+          />
+        </div>
       </FilterBar>
 
       <TableWrapper>
         <thead>
           <tr>
-            <Th>Affiliate</Th>
+            <Th>Affiliate (Manager & Sub)</Th>
             <Th>Wallet</Th>
-            <Th>Amount</Th>
+            <Th>Commission</Th>
             <Th>Network</Th>
             <Th>Date</Th>
             <Th>Status</Th>
@@ -161,40 +211,81 @@ export default function PagePayouts() {
         <tbody>
           {isLoading ? (
             <TableSkeleton rows={4} cols={8} />
-          ) : payouts.length === 0 ? (
-            <EmptyState colSpan={8} />
+          ) : paginatedPayouts.length === 0 ? (
+            <EmptyState
+              colSpan={8}
+              label="No payouts found matching your criteria."
+            />
           ) : (
-            payouts
-              .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-              .map((p: any) => (
+            paginatedPayouts.map((p: any) => {
+              // Extract the individual commissions to show who is getting paid
+              const managerComm = p.commissions?.find(
+                (c: any) => c.recipient?.role === ROLES.MANAGER,
+              );
+              const basicComm = p.commissions?.find(
+                (c: any) => c.recipient?.role === ROLES.BASIC,
+              );
+
+              return (
                 <tr key={p.id} className="hover:bg-white/2 transition-colors">
                   <Td>
                     <div>
-                      <div className="font-semibold text-white text-sm">
-                        {p.user?.profile?.displayName ?? p.user?.username}
-                      </div>
-                      <div className="text-xs text-zinc-600">
-                        {p.user?.email}
-                      </div>
+                      {managerComm ? (
+                        <>
+                          <div className="font-semibold text-white text-sm">
+                            {managerComm.recipient?.profile?.displayName ??
+                              managerComm.recipient?.username}
+                          </div>
+                          <div className="text-xs text-zinc-500">
+                            {managerComm.recipient?.email}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-zinc-500">
+                          Unknown Manager
+                        </div>
+                      )}
+
+                      {/* Show Basic Sub-Affiliate details if they exist on this deposit */}
+                      {basicComm && (
+                        <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 bg-sky-500/10 rounded-md border border-sky-500/20 w-fit">
+                          <ArrowDownRight className="w-3 h-3 text-sky-400" />
+                          <span className="text-[10px] font-semibold text-sky-400">
+                            Sub:{" "}
+                            {basicComm.recipient?.profile?.displayName ??
+                              basicComm.recipient?.username}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </Td>
                   <Td>
-                    {p.paymentMethod ? (
+                    {/* Display Manager's wallet by default */}
+                    {managerComm?.wallet ? (
                       <span className="font-mono text-xs text-zinc-500">
-                        {fmt.shortAddr(p.paymentMethod.address)}
+                        {fmt.shortAddr(managerComm.wallet.address)}
                       </span>
                     ) : (
                       <span className="text-zinc-600 text-xs">—</span>
                     )}
                   </Td>
                   <Td>
-                    <span className="font-bold text-amber-400">
-                      {fmt.usd(p.amount)}
-                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      {managerComm && (
+                        <span className="font-bold text-amber-400">
+                          {fmt.usd(managerComm.amount)}
+                        </span>
+                      )}
+                      {basicComm && (
+                        <span className="font-semibold text-sky-400 text-[11px]">
+                          + {fmt.usd(basicComm.amount)}
+                        </span>
+                      )}
+                    </div>
                   </Td>
                   <Td>
                     <Badge variant="blue">
-                      {p.paymentMethod?.network ?? "TRC20"}
+                      {managerComm?.wallet?.network ?? "TRC20"}
                     </Badge>
                   </Td>
                   <Td>
@@ -262,15 +353,17 @@ export default function PagePayouts() {
                     </div>
                   </Td>
                 </tr>
-              ))
+              );
+            })
           )}
         </tbody>
       </TableWrapper>
+
       <PaginationBar
         currentPage={page}
-        totalPages={Math.ceil((payouts as any[]).length / PAGE_SIZE) || 1}
+        totalPages={totalPages}
         onPageChange={setPage}
-        totalItems={(payouts as any[]).length}
+        totalItems={filteredPayouts.length}
         pageSize={PAGE_SIZE}
       />
 

@@ -207,7 +207,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.6, ease: EASE_OUT_EXPO }}
-              className="mb-6 flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/8 text-amber-400 text-xs font-bold tracking-widest uppercase"
+              className="mb-6 flex items-center gap-2 px-2 sm:px-4 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/8 text-amber-400 text-xs font-bold tracking-widest uppercase"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               iGaming Affiliate Infrastructure
@@ -247,7 +247,7 @@ export default function LandingPage() {
               >
                 <Link
                   href="/register"
-                  className="group flex items-center gap-2 px-6 py-3.5 rounded-xl bg-amber-400 text-black font-bold text-sm hover:bg-amber-300 transition-colors shadow-[0_0_40px_rgba(251,191,36,0.35)]"
+                  className="group flex items-center gap-2 px-3 sm:px-6 py-3.5 rounded-xl bg-amber-400 text-black font-bold text-sm hover:bg-amber-300 transition-colors shadow-[0_0_40px_rgba(251,191,36,0.35)]"
                 >
                   Start Earning
                   <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -259,7 +259,7 @@ export default function LandingPage() {
               >
                 <a
                   href="#features"
-                  className="flex items-center gap-2 px-6 py-3.5 rounded-xl border border-white/12 text-zinc-300 text-sm font-semibold hover:border-white/30 hover:text-white transition-all backdrop-blur-sm"
+                  className="flex items-center gap-2 px-3 sm:px-6 py-3.5 rounded-xl border border-white/12 text-zinc-300 text-sm font-semibold hover:border-white/30 hover:text-white transition-all backdrop-blur-sm"
                 >
                   Explore Platform
                 </a>
@@ -324,7 +324,10 @@ export default function LandingPage() {
       </section>
 
       {/* ── Bento features ── */}
-      <section id="features" className="relative z-10 py-24 px-6 bg-[#080808]">
+      <section
+        id="features"
+        className="relative z-10 py-12 sm:py-24 px-6 bg-[#080808]"
+      >
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -425,7 +428,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CurvedLoop divider ── */}
-      <section className="relative z-10 bg-[#080808] py-6">
+      <section className="relative z-10 bg-[#080808] py-0 sm:py-6">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent mb-6" />
         <CurvedLoop
           marqueeText="Real-Time Analytics  ✦  Crypto Payouts  ✦  Fraud Shield  ✦  Live Feed  ✦  API-First  ✦  Edge Network  ✦  SSO Auth  ✦  24/7 Support  ✦"
@@ -439,7 +442,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="relative z-10 bg-[#080808] py-24 px-6">
+      <section className="relative z-10 bg-[#080808] py-12 sm:py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
@@ -483,7 +486,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="relative z-10 py-32 px-6 bg-[#080808] overflow-hidden">
+      <section className="relative z-10 py-12 sm:py-32 px-6 bg-[#080808] overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-[600px] h-[300px] bg-amber-400/8 rounded-full blur-[120px]" />
         </div>

@@ -12,14 +12,9 @@ import {
   X,
   Plus,
   Eye,
-  BarChart3,
-  CheckCircle2,
-  MousePointer2,
   MoreVertical,
   Link as LinkIcon,
   Copy,
-  TerminalSquare,
-  Settings,
   Edit2,
   PauseCircle,
   PlayCircle,
@@ -37,13 +32,10 @@ import {
   EmptyState,
   TableSkeleton,
   AmberBtn,
-  OutlineBtn,
   Modal,
   FilterBar,
   pageIn,
   SectionHeader,
-  stagger,
-  fadeUp,
   fmt,
 } from "./dashboard/UI";
 import {
@@ -85,7 +77,6 @@ function ImageUpload({
     }
     setIsUploading(true);
     try {
-      // 1. Get signed URL from backend
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "/api"}/offers/upload-url`,
         {
@@ -97,7 +88,6 @@ function ImageUpload({
       if (!res.ok) throw new Error("Failed to get upload URL");
       const { uploadUrl, publicUrl } = await res.json();
 
-      // 2. Upload directly to GCS using the signed URL
       const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
@@ -105,7 +95,6 @@ function ImageUpload({
       });
       if (!uploadRes.ok) throw new Error("Failed to upload image");
 
-      // 3. Update form state
       onChange(publicUrl);
       toast.success("Image uploaded successfully");
     } catch (error) {
@@ -423,6 +412,10 @@ function ActionMenu({
     }
   };
 
+  // Check if there is enough space below the button to render the menu.
+  // If less than 300px of space, we render it ABOVE the button.
+  const placeAbove = rect ? window.innerHeight - rect.bottom < 300 : false;
+
   return (
     <>
       <button
@@ -438,13 +431,22 @@ function ActionMenu({
         createPortal(
           <motion.div
             ref={menuRef}
-            initial={{ opacity: 0, scale: 0.95, transformOrigin: "top right" }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            // Animate upwards if placeAbove is true, using Y translations
+            initial={{
+              opacity: 0,
+              scale: 0.95,
+              y: placeAbove ? "-100%" : 0,
+              transformOrigin: placeAbove ? "bottom right" : "top right",
+            }}
+            animate={{ opacity: 1, scale: 1, y: placeAbove ? "-100%" : 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: placeAbove ? "-100%" : 0 }}
             transition={{ duration: 0.1 }}
             style={{
               position: "absolute",
-              top: rect.bottom + window.scrollY + 4,
+              // If above, place top exactly 4px above the button. If below, place exactly 4px below.
+              top: placeAbove
+                ? rect.top + window.scrollY - 4
+                : rect.bottom + window.scrollY + 4,
               left: rect.right - 192 + window.scrollX, // 192px = w-48
               zIndex: 9999,
             }}
@@ -590,7 +592,6 @@ function CreateOfferModal({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-        {/* Render Name and Casino URL */}
         {[
           {
             label: "Offer Name *",
@@ -616,13 +617,11 @@ function CreateOfferModal({ onClose }: { onClose: () => void }) {
           </div>
         ))}
 
-        {/* Custom Image Upload Field */}
         <ImageUpload
           value={form.logoUrl}
           onChange={(url) => set("logoUrl", url)}
         />
 
-        {/* Render Description */}
         <div>
           <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 block">
             Description
@@ -660,7 +659,6 @@ function CreateOfferModal({ onClose }: { onClose: () => void }) {
           />
         </div>
 
-        {/* FTD and REG Fields */}
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 block">
@@ -858,13 +856,11 @@ function EditOfferModal({
           </div>
         ))}
 
-        {/* Custom Image Upload Field */}
         <ImageUpload
           value={form.logoUrl}
           onChange={(url) => set("logoUrl", url)}
         />
 
-        {/* Description Field */}
         <div>
           <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 block">
             Description
@@ -1108,151 +1104,154 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
 
       {/* Filter row */}
       <FilterBar>
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search offers…"
-            className="pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40 w-48"
-          />
-        </div>
-
-        {/* Availability */}
-        <DropBtn
-          label={
-            avail === "available"
-              ? "Available"
-              : avail === "approval"
-                ? "Requires Approval"
-                : "Availability"
-          }
-        >
-          {[
-            ["", "All"],
-            ["available", "Available"],
-            ["approval", "Requires Approval"],
-          ].map(([val, lbl]) => (
-            <button
-              key={val}
-              onClick={() => setAvail(val as any)}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors ${avail === val ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
-            >
-              {lbl}
-            </button>
-          ))}
-        </DropBtn>
-
-        {/* Category */}
-        <DropBtn label={category !== "All" ? category : "Category"}>
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors ${category === c ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
-            >
-              {c}
-            </button>
-          ))}
-        </DropBtn>
-
-        {/* Country */}
-        <DropBtn
-          label={
-            country
-              ? (COUNTRIES.find((c) => c.code === country)?.name ?? country)
-              : "Country"
-          }
-          icon={<Globe className="w-3 h-3" />}
-        >
-          <div className="px-2 pb-1">
+        {/* ADDED flex-wrap here so the filters don't squish out of bounds on mobile */}
+        <div className="flex flex-wrap items-center gap-2 flex-1">
+          {/* Search */}
+          <div className="relative flex-grow sm:flex-grow-0">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
             <input
-              value={countryQ}
-              onChange={(e) => setCountryQ(e.target.value)}
-              placeholder="Search country…"
-              className="w-full px-2 py-1 bg-zinc-800 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none"
-              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search offers…"
+              className="w-full sm:w-48 pl-8 pr-3 py-1.5 bg-zinc-800/60 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-amber-400/40"
             />
           </div>
-          <div className="max-h-44 overflow-y-auto">
-            <button
-              onClick={() => setCountry("")}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors ${!country ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
-            >
-              🌍 All Countries
-            </button>
-            {countryResults.map((c) => (
+
+          {/* Availability */}
+          <DropBtn
+            label={
+              avail === "available"
+                ? "Available"
+                : avail === "approval"
+                  ? "Requires Approval"
+                  : "Availability"
+            }
+          >
+            {[
+              ["", "All"],
+              ["available", "Available"],
+              ["approval", "Requires Approval"],
+            ].map(([val, lbl]) => (
               <button
-                key={c.code}
-                onClick={() => setCountry(c.code)}
-                className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${country === c.code ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+                key={val}
+                onClick={() => setAvail(val as any)}
+                className={`w-full text-left px-3 py-2 text-xs transition-colors ${avail === val ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
               >
-                <span>{c.flag}</span>
-                <span className="truncate">{c.name}</span>
+                {lbl}
               </button>
             ))}
-          </div>
-        </DropBtn>
+          </DropBtn>
 
-        {/* Checkboxes for Filters and Star */}
-        <div className="flex items-center gap-4 ml-2 text-xs text-zinc-500">
-          {(
-            [
-              ["New", checkNew, setCheckNew],
-              ["Top", checkTop, setCheckTop],
-              ["Exclusive", checkExcl, setCheckExcl],
-              [
-                <Star
-                  key="star-icon"
-                  className={`w-3.5 h-3.5 cursor-pointer transition-colors ${checkStar ? "text-amber-400 fill-amber-400" : "text-zinc-500"}`}
-                />,
-                checkStar,
-                setCheckStar,
-              ],
-            ] as const
-          ).map(([label, val, setFn], idx) => (
-            <label
-              key={idx}
-              className="flex items-center gap-1.5 cursor-pointer hover:text-zinc-300"
-            >
+          {/* Category */}
+          <DropBtn label={category !== "All" ? category : "Category"}>
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={`w-full text-left px-3 py-2 text-xs transition-colors ${category === c ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+              >
+                {c}
+              </button>
+            ))}
+          </DropBtn>
+
+          {/* Country */}
+          <DropBtn
+            label={
+              country
+                ? (COUNTRIES.find((c) => c.code === country)?.name ?? country)
+                : "Country"
+            }
+            icon={<Globe className="w-3 h-3" />}
+          >
+            <div className="px-2 pb-1">
               <input
-                type="checkbox"
-                checked={val as boolean}
-                onChange={(e) => (setFn as any)(e.target.checked)}
-                className="accent-amber-400 w-3 h-3"
+                value={countryQ}
+                onChange={(e) => setCountryQ(e.target.value)}
+                placeholder="Search country…"
+                className="w-full px-2 py-1 bg-zinc-800 border border-white/8 rounded-lg text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none"
+                autoFocus
               />
-              {label}
-            </label>
-          ))}
+            </div>
+            <div className="max-h-44 overflow-y-auto">
+              <button
+                onClick={() => setCountry("")}
+                className={`w-full text-left px-3 py-2 text-xs transition-colors ${!country ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+              >
+                🌍 All Countries
+              </button>
+              {countryResults.map((c) => (
+                <button
+                  key={c.code}
+                  onClick={() => setCountry(c.code)}
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${country === c.code ? "text-amber-400" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+                >
+                  <span>{c.flag}</span>
+                  <span className="truncate">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          </DropBtn>
+
+          {/* Checkboxes for Filters and Star */}
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 sm:ml-2 text-xs text-zinc-500">
+            {(
+              [
+                ["New", checkNew, setCheckNew],
+                ["Top", checkTop, setCheckTop],
+                ["Exclusive", checkExcl, setCheckExcl],
+                [
+                  <Star
+                    key="star-icon"
+                    className={`w-3.5 h-3.5 cursor-pointer transition-colors ${checkStar ? "text-amber-400 fill-amber-400" : "text-zinc-500"}`}
+                  />,
+                  checkStar,
+                  setCheckStar,
+                ],
+              ] as const
+            ).map(([label, val, setFn], idx) => (
+              <label
+                key={idx}
+                className="flex items-center gap-1.5 cursor-pointer hover:text-zinc-300"
+              >
+                <input
+                  type="checkbox"
+                  checked={val as boolean}
+                  onChange={(e) => (setFn as any)(e.target.checked)}
+                  className="accent-amber-400 w-3 h-3"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          {(search ||
+            country ||
+            category !== "All" ||
+            avail ||
+            checkNew ||
+            checkTop ||
+            checkExcl ||
+            checkStar) && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setCountry("");
+                setCategory("All");
+                setAvail("");
+                setCheckNew(false);
+                setCheckTop(false);
+                setCheckExcl(false);
+                setCheckStar(false);
+              }}
+              className="flex items-center gap-1 text-[11px] text-zinc-600 hover:text-rose-400 transition-colors"
+            >
+              <X className="w-3 h-3" /> Clear
+            </button>
+          )}
         </div>
 
-        {(search ||
-          country ||
-          category !== "All" ||
-          avail ||
-          checkNew ||
-          checkTop ||
-          checkExcl ||
-          checkStar) && (
-          <button
-            onClick={() => {
-              setSearch("");
-              setCountry("");
-              setCategory("All");
-              setAvail("");
-              setCheckNew(false);
-              setCheckTop(false);
-              setCheckExcl(false);
-              setCheckStar(false);
-            }}
-            className="flex items-center gap-1 text-[11px] text-zinc-600 hover:text-rose-400 transition-colors"
-          >
-            <X className="w-3 h-3" /> Clear
-          </button>
-        )}
-
-        <span className="ml-auto text-xs text-zinc-600">
+        <span className="ml-auto text-xs text-zinc-600 hidden sm:block whitespace-nowrap pl-4">
           {filtered.length} results
         </span>
       </FilterBar>
@@ -1263,8 +1262,8 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
           <tr>
             <Th> </Th>
             <Th>Offer</Th>
-            <Th>Category</Th>
-            <Th>GEO</Th>
+            <Th className="hidden sm:table-cell">Category</Th>
+            <Th className="hidden md:table-cell">GEO</Th>
             <Th>Payout</Th>
             <Th>Status</Th>
             <Th className="text-right">Action</Th>
@@ -1287,7 +1286,6 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
                 <tr
                   key={offer.id}
                   className="hover:bg-white/2 transition-colors cursor-pointer group relative"
-                  onClick={() => onSelectOffer(offer.id)}
                 >
                   <Td>
                     <button
@@ -1309,6 +1307,7 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
                         {offer.logoUrl ? (
                           <img
                             src={offer.logoUrl}
+                            onClick={() => onSelectOffer(offer.id)}
                             alt={offer.name}
                             className="w-full h-full object-cover"
                           />
@@ -1346,7 +1345,7 @@ export default function PageOffers({ role, onSelectOffer }: Props) {
                             e.stopPropagation();
                             onSelectOffer(offer.id);
                           }}
-                          className="text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors text-left leading-tight mt-0.5"
+                          className="text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors text-left leading-tight cursor-pointer mt-0.5"
                         >
                           {offer.name}
                         </button>

@@ -392,8 +392,8 @@ export default function Dashboard() {
       />
 
       {/* ── Header ── */}
-      <header className="fixed top-0 left-0 right-0 z-40 h-14 border-b border-white/6 bg-[#080808]/90 backdrop-blur-xl flex items-center px-3 sm:px-4 gap-2 sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+      <header className="fixed top-0 left-0 right-0 z-40 h-14 border-b border-white/6 bg-[#080808]/90 backdrop-blur-xl flex items-center px-3 sm:px-4 gap-2 sm:gap-10">
+        <div className="flex items-center gap-2 sm:gap-6 flex-shrink-0">
           <button
             onClick={() => setIsSidebarOpen((prev) => !prev)}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
