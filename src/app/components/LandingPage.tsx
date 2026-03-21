@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import type { Variants } from "motion/react";
 import {
@@ -18,6 +18,7 @@ import CurvedLoop from "@/components/CurvedLoop";
 import Header from "./Header";
 import Image from "next/image";
 import CountUp from "@/components/CountUp";
+import { toast } from "sonner";
 
 // ─── Easing ───────────────────────────────────────────────────────────────────
 // Must be typed `as const` so TS infers [number, number, number, number]
@@ -161,12 +162,27 @@ function BentoCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  // Force video playback specifically for stubborn iOS mobile browsers
+  useEffect(() => {
+    if (videoRef.current) {
+      // Explicitly set DOM-level mute states bypassing React's synthetic properties
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+
+      videoRef.current.play().catch((error) => {
+        toast.error("Video auto-play was prevented by browser:", error);
+      });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-amber-400 selection:text-black antialiased">
@@ -187,7 +203,8 @@ export default function LandingPage() {
           className="absolute inset-0 z-0"
         >
           <video
-            src="/BC Partners backgroun video.mp4"
+            ref={videoRef}
+            src="/BC%20Partners%20backgroun%20video.mp4"
             autoPlay
             muted
             loop
