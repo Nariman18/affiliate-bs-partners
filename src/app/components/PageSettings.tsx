@@ -149,9 +149,6 @@ export default function PageSettings() {
               onClick={() => setSubTab(item)}
               className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${subTab === item ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-zinc-500 hover:text-white hover:bg-white/4"}`}
             >
-              {item === "Global Postbacks" && (
-                <Send className="w-3.5 h-3.5 inline-block mr-2 -mt-0.5" />
-              )}
               {item}
             </button>
           ))}
