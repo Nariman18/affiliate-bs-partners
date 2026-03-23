@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   Shield,
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   UploadCloud,
   X,
+  Code2,
 } from "lucide-react";
 import { AmberBtn, pageIn, SectionHeader, Spinner } from "./dashboard/UI";
 import {
@@ -27,6 +28,7 @@ export default function PageSettings() {
 
   const [displayName, setDisplayName] = useState("");
   const [telegramHandle, setTelegramHandle] = useState("");
+  const [postbackUrl, setPostbackUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -34,6 +36,15 @@ export default function PageSettings() {
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+
+  // Pre-fill existing data when 'me' loads
+  useEffect(() => {
+    if (me) {
+      if ((me as any).postbackUrl) {
+        setPostbackUrl((me as any).postbackUrl);
+      }
+    }
+  }, [me]);
 
   if (isLoading) return <Spinner />;
 
@@ -85,6 +96,10 @@ export default function PageSettings() {
     });
   };
 
+  const handleSavePostback = () => {
+    updateProfile.mutate({ postbackUrl: postbackUrl.trim() });
+  };
+
   const handleChangePassword = () => {
     if (newPw !== confirmPw) {
       toast.error("Passwords don't match.");
@@ -123,25 +138,23 @@ export default function PageSettings() {
       <div className="grid md:grid-cols-[200px_1fr] gap-4 md:gap-6">
         {/* Sub-nav */}
         <div className="flex md:flex-col gap-1 overflow-x-auto pb-1 md:pb-0 -mx-1 px-1 md:mx-0 md:px-0">
-          {["Personal Preferences", "Billing Details", "Security"].map(
-            (item) => (
-              <button
-                key={item}
-                onClick={() => setSubTab(item)}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${subTab === item ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-zinc-500 hover:text-white hover:bg-white/4"}`}
-              >
-                {item}
-              </button>
-            ),
-          )}
-          <div className="pt-3 border-t border-white/6 hidden md:block">
-            <button className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold text-zinc-600 hover:text-white hover:bg-white/4 transition-all">
-              <div className="flex items-center gap-2">
-                <Send className="w-3.5 h-3.5" /> Global Postbacks
-              </div>
-              <ExternalLink className="w-3 h-3" />
+          {[
+            "Personal Preferences",
+            "Billing Details",
+            "Global Postbacks",
+            "Security",
+          ].map((item) => (
+            <button
+              key={item}
+              onClick={() => setSubTab(item)}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${subTab === item ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-zinc-500 hover:text-white hover:bg-white/4"}`}
+            >
+              {item === "Global Postbacks" && (
+                <Send className="w-3.5 h-3.5 inline-block mr-2 -mt-0.5" />
+              )}
+              {item}
             </button>
-          </div>
+          ))}
         </div>
 
         {/* Content panel */}
@@ -301,6 +314,85 @@ export default function PageSettings() {
                   </div>
                 ))}
                 <AmberBtn>Save Changes</AmberBtn>
+              </div>
+            </div>
+          )}
+
+          {/* ── Global Postbacks ── */}
+          {subTab === "Global Postbacks" && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Send className="w-5 h-5 text-amber-400" />
+                <h3 className="text-lg font-black text-white">
+                  S2S Global Postback
+                </h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+                Configure your global Server-to-Server (S2S) postback URL to
+                receive real-time conversion data directly into your external
+                tracker (Keitaro, Binom, Voluum, etc).
+              </p>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 block">
+                    Postback URL
+                  </label>
+                  <input
+                    value={postbackUrl}
+                    onChange={(e) => setPostbackUrl(e.target.value)}
+                    placeholder="https://your-tracker.com/postback?cid={click_id}&payout={payout}"
+                    className="w-full px-4 py-3 rounded-xl border border-white/8 bg-zinc-900 font-mono text-sm text-zinc-300 focus:outline-none focus:border-amber-400/40"
+                  />
+                </div>
+
+                <div className="p-5 rounded-xl border border-white/5 bg-black/40">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Code2 className="w-4 h-4 text-zinc-500" />
+                    <h4 className="text-sm font-bold text-white uppercase tracking-widest">
+                      Available Macros
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                    {[
+                      {
+                        macro: "{click_id}",
+                        desc: "Unique BadCat click identifier",
+                      },
+                      {
+                        macro: "{sub_id}",
+                        desc: "Your custom Sub ID passed in tracking link",
+                      },
+                      { macro: "{payout}", desc: "Your commission amount" },
+                      {
+                        macro: "{currency}",
+                        desc: "Payout currency (e.g., USD)",
+                      },
+                      {
+                        macro: "{status}",
+                        desc: "Conversion status (e.g., PENDING)",
+                      },
+                    ].map(({ macro, desc }) => (
+                      <div
+                        key={macro}
+                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 border-b border-white/5 pb-2"
+                      >
+                        <span className="font-mono text-xs text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded shrink-0">
+                          {macro}
+                        </span>
+                        <span className="text-xs text-zinc-500">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <AmberBtn
+                  onClick={handleSavePostback}
+                  disabled={updateProfile.isPending}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {updateProfile.isPending ? "Saving…" : "Save Postback URL"}
+                </AmberBtn>
               </div>
             </div>
           )}

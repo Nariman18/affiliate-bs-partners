@@ -54,6 +54,7 @@ export const authEndpoints = {
     displayName?: string;
     telegramHandle?: string;
     avatarUrl?: string;
+    postbackUrl?: string;
   }) => {
     const { data } = await api.patch("/auth/me", payload);
     return data;
