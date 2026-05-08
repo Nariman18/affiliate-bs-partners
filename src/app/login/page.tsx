@@ -54,7 +54,7 @@ export default function LoginPage() {
               {/* Email or Username */}
               <div className="flex flex-col space-y-2.5">
                 <label className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                  Email or Username
+                  Username
                 </label>
                 <div className="relative">
                   <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
