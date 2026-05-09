@@ -522,19 +522,45 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                               </>
                             )}
                             {req.status === "APPROVED" && (
-                              <button
-                                onClick={() =>
-                                  updateReq.mutate({
-                                    offerId: offer.id,
-                                    reqId: req.id,
-                                    status: "REJECTED",
-                                  })
-                                }
-                                disabled={updateReq.isPending}
-                                className="px-2 py-1 bg-rose-500/15 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/20 hover:bg-rose-500/25 transition-colors"
-                              >
-                                Revoke Access
-                              </button>
+                              <>
+                                {/* NEW: Quick Generate Link Button */}
+                                <button
+                                  onClick={() => {
+                                    createLink.mutate(
+                                      {
+                                        offerId: offer.id,
+                                        affiliateId: req.user.id,
+                                      },
+                                      {
+                                        onSuccess: () => {
+                                          toast.success(
+                                            `Tracking link generated for ${req.user.username}`,
+                                          );
+                                          refetch(); // Refreshes the links tab data
+                                        },
+                                      },
+                                    );
+                                  }}
+                                  disabled={createLink.isPending}
+                                  className="px-2 py-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold rounded-lg border border-amber-500/20 hover:bg-amber-500/25 transition-colors"
+                                >
+                                  Generate Link
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    updateReq.mutate({
+                                      offerId: offer.id,
+                                      reqId: req.id,
+                                      status: "REJECTED",
+                                    })
+                                  }
+                                  disabled={updateReq.isPending}
+                                  className="px-2 py-1 bg-rose-500/15 text-rose-400 text-[10px] font-bold rounded-lg border border-rose-500/20 hover:bg-rose-500/25 transition-colors"
+                                >
+                                  Revoke Access
+                                </button>
+                              </>
                             )}
                             {req.status === "REJECTED" && (
                               <button
