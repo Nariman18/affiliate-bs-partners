@@ -413,7 +413,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
                   )}
                 </tbody>
               </TableWrapper>
-              {role === ROLES.ADMIN && (
+              {/* {role === ROLES.ADMIN && (
                 <div className="mt-4 p-4 rounded-xl border border-sky-500/20 bg-sky-500/5">
                   <h4 className="text-xs font-bold text-sky-400 mb-2 flex items-center gap-2">
                     <TerminalSquare className="w-3.5 h-3.5" /> How to test
@@ -434,7 +434,7 @@ export default function PageOfferDetail({ offerId, role, onBack }: Props) {
 }'`}
                   </code>
                 </div>
-              )}
+              )} */}
             </div>
           )}
 
